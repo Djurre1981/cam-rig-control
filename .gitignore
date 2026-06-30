@@ -1,0 +1,23 @@
+# Python
+host/.venv/
+__pycache__/
+*.py[cod]
+host/config.yaml
+
+# Node
+ui/node_modules/
+ui/dist/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.hex
+*.elf
+
+# Secrets
+.env

@@ -1,0 +1,195 @@
+:root {
+  --bg: #12141a;
+  --panel: #1c2030;
+  --accent: #4f8cff;
+  --danger: #e85d5d;
+  --text: #e8ecf4;
+  --muted: #8b93a7;
+  --track: #252a3a;
+  --clip: #3d6fd4;
+  --clip-camera: #2d9d6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 2rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+  flex: 1;
+}
+
+.status {
+  font-size: 0.85rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+.status.on {
+  background: #1a3d2e;
+  color: #6ddea0;
+}
+.status.off {
+  background: #3d1a1a;
+  color: #dea06d;
+}
+
+nav button {
+  margin-right: 0.5rem;
+  background: var(--panel);
+  border: 1px solid #333a4d;
+  color: var(--text);
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+nav button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.live .axis-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 60px;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+button.danger {
+  margin-top: 1rem;
+  background: var(--danger);
+  border: none;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.timeline-section {
+  overflow-x: auto;
+}
+
+.transport {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.transport button {
+  background: var(--accent);
+  border: none;
+  color: white;
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.timeline {
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.timeline-ruler {
+  position: relative;
+  height: 24px;
+  margin-left: 120px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 0.5rem;
+}
+.timeline-ruler span {
+  position: absolute;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.playhead {
+  position: absolute;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: var(--danger);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.track-row {
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 6px;
+}
+
+.track-label {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  color: var(--muted);
+}
+
+.track-lane {
+  position: relative;
+  height: 44px;
+  background: var(--track);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.clip {
+  position: absolute;
+  top: 4px;
+  height: 36px;
+  background: var(--clip);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  padding: 0.25rem 0.4rem;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: grab;
+}
+
+.clip-camera {
+  background: var(--clip-camera);
+}
+
+.track-row.camera .track-label {
+  text-transform: capitalize;
+}
+
+.palette {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--panel);
+  border-radius: 8px;
+}
+
+.palette-clip {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  background: var(--clip);
+  border-radius: 4px;
+  cursor: grab;
+  font-size: 0.85rem;
+}

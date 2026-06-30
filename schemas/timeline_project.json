@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cam-rig.local/schemas/timeline_project.json",
+  "title": "CamRigTimelineProject",
+  "type": "object",
+  "required": ["version", "name", "duration", "tracks"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "name": { "type": "string" },
+    "duration": { "type": "number", "minimum": 0 },
+    "tracks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/motorTrack" },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "camera_tracks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/cameraTrack" }
+    }
+  },
+  "$defs": {
+    "motorTrack": {
+      "type": "object",
+      "required": ["id", "axis", "label", "clips"],
+      "properties": {
+        "id": { "type": "string" },
+        "axis": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "label": { "type": "string" },
+        "clips": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/motorClip" }
+        }
+      }
+    },
+    "motorClip": {
+      "type": "object",
+      "required": ["type", "start", "duration"],
+      "properties": {
+        "type": { "enum": ["JogClip", "MoveClip", "RecordedClip"] },
+        "start": { "type": "number", "minimum": 0 },
+        "duration": { "type": "number", "minimum": 0 },
+        "velocity": { "type": "number" },
+        "from_pos": { "type": "number" },
+        "to_pos": { "type": "number" },
+        "frames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "t": { "type": "number" },
+              "pos": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "cameraTrack": {
+      "type": "object",
+      "required": ["id", "clips"],
+      "properties": {
+        "id": { "enum": ["record", "zoom", "focus", "exposure"] },
+        "clips": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/cameraClip" }
+        }
+      }
+    },
+    "cameraClip": {
+      "type": "object",
+      "required": ["type", "start", "duration"],
+      "properties": {
+        "type": { "enum": ["RecordClip", "ZoomClip", "FocusClip"] },
+        "start": { "type": "number" },
+        "duration": { "type": "number" },
+        "action": { "type": "string" },
+        "from_zoom": { "type": "number" },
+        "to_zoom": { "type": "number" }
+      }
+    }
+  }
+}

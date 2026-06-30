@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "name": "example_slow_swing",
+  "duration": 10,
+  "tracks": [
+    {
+      "id": "track_boom",
+      "axis": 0,
+      "label": "Boom",
+      "clips": []
+    },
+    {
+      "id": "track_swing",
+      "axis": 1,
+      "label": "Swing",
+      "clips": [
+        {
+          "type": "JogClip",
+          "start": 1,
+          "duration": 6,
+          "velocity": 120
+        }
+      ]
+    },
+    {
+      "id": "track_yaw",
+      "axis": 2,
+      "label": "Yaw",
+      "clips": []
+    },
+    {
+      "id": "track_pitch",
+      "axis": 3,
+      "label": "Pitch",
+      "clips": [
+        {
+          "type": "JogClip",
+          "start": 2,
+          "duration": 4,
+          "velocity": -80
+        }
+      ]
+    }
+  ],
+  "camera_tracks": [
+    {
+      "id": "record",
+      "clips": [
+        {
+          "type": "RecordClip",
+          "start": 0.5,
+          "duration": 8,
+          "action": "start"
+        },
+        {
+          "type": "RecordClip",
+          "start": 8.5,
+          "duration": 0.1,
+          "action": "stop"
+        }
+      ]
+    },
+    {
+      "id": "zoom",
+      "clips": [
+        {
+          "type": "ZoomClip",
+          "start": 3,
+          "duration": 4,
+          "from_zoom": 1.0,
+          "to_zoom": 1.5
+        }
+      ]
+    }
+  ]
+}
