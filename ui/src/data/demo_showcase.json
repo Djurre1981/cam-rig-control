@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "name": "Demo — orbit with zoom",
+  "duration": 20,
+  "tracks": [
+    {
+      "id": "track_boom",
+      "axis": 0,
+      "label": "Boom",
+      "color": "#e85d5d",
+      "clips": [
+        {
+          "id": "c_boom1",
+          "type": "MoveClip",
+          "start": 0,
+          "duration": 5,
+          "from_pos": 0,
+          "to_pos": 800,
+          "label": "Rise"
+        },
+        {
+          "id": "c_boom2",
+          "type": "JogClip",
+          "start": 14,
+          "duration": 4,
+          "velocity": -60,
+          "label": "Lower"
+        }
+      ]
+    },
+    {
+      "id": "track_swing",
+      "axis": 1,
+      "label": "Swing",
+      "color": "#d4b84a",
+      "clips": [
+        {
+          "id": "c_swing1",
+          "type": "JogClip",
+          "start": 2,
+          "duration": 12,
+          "velocity": 90,
+          "label": "Orbit"
+        }
+      ]
+    },
+    {
+      "id": "track_yaw",
+      "axis": 2,
+      "label": "Yaw",
+      "color": "#5de88a",
+      "clips": [
+        {
+          "id": "c_yaw1",
+          "type": "JogClip",
+          "start": 4,
+          "duration": 8,
+          "velocity": -70,
+          "label": "Pan L"
+        }
+      ]
+    },
+    {
+      "id": "track_pitch",
+      "axis": 3,
+      "label": "Pitch",
+      "color": "#4f8cff",
+      "clips": [
+        {
+          "id": "c_pitch1",
+          "type": "MoveClip",
+          "start": 6,
+          "duration": 6,
+          "from_pos": 0,
+          "to_pos": -400,
+          "label": "Tilt down"
+        }
+      ]
+    }
+  ],
+  "camera_tracks": [
+    {
+      "id": "record",
+      "label": "Record",
+      "color": "#c44d6d",
+      "clips": [
+        {
+          "id": "c_rec1",
+          "type": "RecordClip",
+          "start": 1,
+          "duration": 0.25,
+          "action": "start",
+          "label": "▶"
+        },
+        {
+          "id": "c_rec2",
+          "type": "RecordClip",
+          "start": 17,
+          "duration": 0.25,
+          "action": "stop",
+          "label": "■"
+        }
+      ]
+    },
+    {
+      "id": "zoom",
+      "label": "Zoom",
+      "color": "#2d9d8a",
+      "clips": [
+        {
+          "id": "c_zoom1",
+          "type": "ZoomClip",
+          "start": 5,
+          "duration": 8,
+          "from_zoom": 1,
+          "to_zoom": 2,
+          "label": "1×→2×"
+        }
+      ]
+    },
+    {
+      "id": "focus",
+      "label": "Focus",
+      "color": "#d4844a",
+      "clips": [
+        {
+          "id": "c_focus1",
+          "type": "FocusClip",
+          "start": 10,
+          "duration": 4,
+          "label": "Pull"
+        }
+      ]
+    }
+  ]
+}

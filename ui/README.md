@@ -1,25 +1,49 @@
-# Cam Rig UI
+# Cam Rig UI — Timeline demo (v0.2)
 
-React + Vite timeline editor and live jog panel.
+Non-functional **demo interface** for planning motion presets while hardware is in transit. Inspired by [Dragonframe Arc Motion Control](https://www.dragonframe.com/dragonframe-software/) (multi-axis keyframes, move tests) and NLE-style multi-track editors (Premiere, Reaper).
 
-## Development
+## Run locally
 
 ```bash
+cd ui
 npm install
 npm run dev
 ```
 
-Set `VITE_WS_URL=ws://192.168.1.x:8080/ws` to point at the Pi.
+Open **http://localhost:5173**
 
-## Screens
+Demo mode is **on** by default (no Pi/Mega required). Set `VITE_DEMO_MODE=false` to prepare for live API connection later.
 
-- **Live** — per-axis velocity sliders
-- **Timeline** — 4 motor tracks + camera tracks, drag jog clips, play/stop
+## Features (demo)
 
-## Production build
+| Area | Behavior |
+|------|----------|
+| **Timeline** | 4 motor tracks + 3 camera tracks (record, zoom, focus) |
+| **Clip palette** | Drag Jog, Move, Recorded, Record, Zoom, Focus onto matching tracks |
+| **Clips** | Select, drag to reposition, resize via right edge |
+| **Transport** | Play / pause / stop, speed 0.25×–2×, scrub via ruler click |
+| **Inspector** | Edit clip start, duration, velocity, zoom range |
+| **Presets** | Switch between demo projects (local JSON) |
+| **Live** | Slider jog UI + record button (visual only) |
 
-```bash
-npm run build
+## Layout
+
+```
+┌─────────────┬──────────────────────────────────┬────────────┐
+│ Presets     │ Transport (play, timecode, speed)│ Inspector  │
+│ Clip palette│ 4× motion tracks (DIW colors)    │ clip props │
+│             │ 3× camera tracks                   │            │
+└─────────────┴──────────────────────────────────┴────────────┘
 ```
 
-Serve `dist/` from the Pi (nginx/caddy) or open from laptop against Pi API.
+## Design references
+
+- **Dragonframe Arc** — per-axis channels, keyframed moves, jogpad, move test playback
+- **DaVinci Resolve / Premiere** — timeline ruler, clip blocks, transport bar
+- **DAW (Reaper)** — independent tracks, snap grid, clip resize
+
+## Next (when hardware ready)
+
+- WebSocket to `host/api` for live jog and playback
+- Record live motion → `RecordedClip` on timeline
+- Sony ZV-1 II camera commands on camera tracks

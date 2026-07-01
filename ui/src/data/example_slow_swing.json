@@ -1,24 +1,28 @@
 {
   "version": 1,
-  "name": "example_slow_swing",
+  "name": "Slow swing test",
   "duration": 10,
   "tracks": [
     {
       "id": "track_boom",
       "axis": 0,
       "label": "Boom",
+      "color": "#e85d5d",
       "clips": []
     },
     {
       "id": "track_swing",
       "axis": 1,
       "label": "Swing",
+      "color": "#d4b84a",
       "clips": [
         {
+          "id": "c_sw1",
           "type": "JogClip",
           "start": 1,
           "duration": 6,
-          "velocity": 120
+          "velocity": 120,
+          "label": "Swing"
         }
       ]
     },
@@ -26,18 +30,22 @@
       "id": "track_yaw",
       "axis": 2,
       "label": "Yaw",
+      "color": "#5de88a",
       "clips": []
     },
     {
       "id": "track_pitch",
       "axis": 3,
       "label": "Pitch",
+      "color": "#4f8cff",
       "clips": [
         {
+          "id": "c_pi1",
           "type": "JogClip",
           "start": 2,
           "duration": 4,
-          "velocity": -80
+          "velocity": -80,
+          "label": "Tilt"
         }
       ]
     }
@@ -45,32 +53,48 @@
   "camera_tracks": [
     {
       "id": "record",
+      "label": "Record",
+      "color": "#c44d6d",
       "clips": [
         {
+          "id": "c_r1",
           "type": "RecordClip",
           "start": 0.5,
-          "duration": 8,
-          "action": "start"
+          "duration": 0.25,
+          "action": "start",
+          "label": "▶"
         },
         {
+          "id": "c_r2",
           "type": "RecordClip",
           "start": 8.5,
-          "duration": 0.1,
-          "action": "stop"
+          "duration": 0.25,
+          "action": "stop",
+          "label": "■"
         }
       ]
     },
     {
       "id": "zoom",
+      "label": "Zoom",
+      "color": "#2d9d8a",
       "clips": [
         {
+          "id": "c_z1",
           "type": "ZoomClip",
           "start": 3,
           "duration": 4,
           "from_zoom": 1.0,
-          "to_zoom": 1.5
+          "to_zoom": 1.5,
+          "label": "Zoom"
         }
       ]
+    },
+    {
+      "id": "focus",
+      "label": "Focus",
+      "color": "#d4844a",
+      "clips": []
     }
   ]
 }
