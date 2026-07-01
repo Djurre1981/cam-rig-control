@@ -8,7 +8,8 @@ Motion-controlled 4-axis camera arm based on the [DIW CNC camera rig](https://ww
 |------|--------|
 | 3D printed parts | Done |
 | Arduino Mega 2560 | **On hand** |
-| CNC Shield V3 + 4× DRV8825 | Ordered ([link](https://nl.aliexpress.com/item/1005006718694606.html)) |
+| RAMPS 1.6 + Mega 2560 | **On hand / ordered** — production stack |
+| DRV8825 × 4 | From CNC kit → RAMPS Pololu slots |
 | Slip rings | Ordered ([link](https://nl.aliexpress.com/item/1005002721716529.html)) |
 | Stepper motors | **4/4** — 2× plain (stock) + 2× 5.18:1 planetary (ordered) |
 | Mechanical assembly | Not started |
@@ -21,14 +22,14 @@ Motion-controlled 4-axis camera arm based on the [DIW CNC camera rig](https://ww
 ```
 [Laptop browser]  ──Wi-Fi──►  [Pi 2 Model B]  ──USB──►  [Sony ZV-1 II]
                                     │
-                                    ├── USB serial ──► [Arduino Mega] ──► 4× NEMA 17
+                                    ├── USB serial ──► [Mega + RAMPS 1.6] ──► 4× NEMA 17
                                     └── (bench only) [Waveshare HAT] ──► 2× NEMA 17
 ```
 
 | Layer | Role |
 |-------|------|
 | **Mechanical** | DIW-printed rig, slip rings, gears, aluminum tubes |
-| **Arduino Mega** | Real-time 4-axis velocity stepping, boom limits |
+| **Arduino Mega + RAMPS 1.6** | Real-time 4-axis velocity stepping, boom limits |
 | **Raspberry Pi 2** | Motion API, camera PTP service, timeline playback, preset storage |
 | **Web UI** | Timeline editor, live jog, preset library (runs on laptop or Pi) |
 
@@ -58,9 +59,10 @@ Motion-controlled 4-axis camera arm based on the [DIW CNC camera rig](https://ww
 
 - [x] All printed parts
 - [x] Arduino Mega 2560 (on hand)
-- [x] CNC Shield V3 + 4× DRV8825 ([AliExpress 1005006718694606](https://nl.aliexpress.com/item/1005006718694606.html))
-- [x] 4× NEMA 17 motors total (2 earlier + 2× 17HS4401-A51M 5.18:1 — [1005010645426451](https://nl.aliexpress.com/item/1005010645426451.html))
-- [x] Slip rings ([1005002721716529](https://nl.aliexpress.com/item/1005002721716529.html))
+- [x] RAMPS 1.6 shield (ordered)
+- [x] 4× DRV8825 drivers (from CNC kit — install on RAMPS)
+- [x] 4× NEMA 17 motors (2× plain in stock + 2× 17HS4401-A51M 5.18:1 ordered)
+- [x] Slip rings
 - [x] Bearings (608ZZ, etc.)
 
 ### Still to order
@@ -69,8 +71,8 @@ Motion-controlled 4-axis camera arm based on the [DIW CNC camera rig](https://ww
 |------|-----|--------|
 | Power supply | 1 | 12–24 V, ≥10 A for 4 motors |
 | DC buck converter | 1 | 5 V, ≥3 A for Pi 2 |
-| Limit switches | 2 | Boom min + max |
-| Jumper wire dupont set | 1 | Mega ↔ CNC shield (shield is Uno footprint) |
+| Limit switches | 2 | Boom → RAMPS X_MIN / X_MAX |
+| Wire ferrules | — | RAMPS 1.6 screw terminals |
 | USB cable A→B | 1 | Pi ↔ Mega (data) |
 | USB cable | 1 | Pi ↔ ZV-1 II (data-capable) |
 | Wire, connectors, heat shrink | — | CAT5e stranded per DIW docs |
@@ -85,7 +87,7 @@ Motion-controlled 4-axis camera arm based on the [DIW CNC camera rig](https://ww
 |------|-----|
 | Raspberry Pi 2 Model B V1.2 | Headless host |
 | Waveshare Stepper Motor HAT (B) | **Bench test only** (2 motors) |
-| Uno 4-axis CNC shield | Adapt to Mega as driver carrier |
+| Uno CNC shield | **Retired** — DRV8825s moved to RAMPS |
 
 ---
 
@@ -136,26 +138,27 @@ Follow [DIW construction docs](../CNC_6-axis_motion_control_docs-main/README.md)
 
 ### 2.1 Motor wiring
 
-| Axis | Driver slot | Motor | Limit switches |
-|------|-------------|-------|----------------|
-| boom | M0 | NEMA 17 (gearhead) | MIN + MAX → Mega |
-| swing | M1 | NEMA 17 (gearhead) | None |
-| yaw | M2 | NEMA 17 | None |
-| pitch | M3 | NEMA 17 | None |
+| Axis | RAMPS slot | Motor | Limit switches |
+|------|------------|-------|----------------|
+| boom | **X** | 5.18:1 planetary | X_MIN + X_MAX |
+| swing | **Y** | 5.18:1 planetary | None |
+| yaw | **Z** | Plain NEMA 17 | None |
+| pitch | **E0** | Plain NEMA 17 | None |
 
-- Set driver current with potentiometer (~1.0–1.5 A for NEMA 17; follow motor datasheet)
-- Set microstepping: 1/16 or 1/32 for smooth video motion
-- Common motor ground; separate VMOT 12–24 V
-- Enable pin: all drivers tied or single GPIO
+- Stack RAMPS 1.6 on Mega; plug DRV8825 modules into X/Y/Z/E0 slots
+- Set driver current with potentiometer (~1.7 A geared, per label on plain motors)
+- Set DRV8825 microstepping: **1/16** (MS pins, not RAMPS DIP — CNC shield DIPs N/A)
+- Motor power via RAMPS **11 A screw terminals** (ferruled wire)
+- Enable: firmware drives pins 38, 56, 62, 24 (active LOW)
 
-See [pin_map.md](pin_map.md) for Mega GPIO assignment (adapt when shield is converted).
+See [pin_map.md](pin_map.md) for RAMPS 1.6 slot and endstop wiring.
 
 ### 2.2 Power distribution
 
 ```
-12–24 V PSU ──┬── VMOT (drivers)
-              └── Buck 5 V ──┬── Pi 2 (pin 2/4 or micro USB)
-                             └── Mega VIN (or USB from Pi for logic only)
+12–24 V PSU ──► RAMPS 1.6 screw terminals (11A)
+              └── Buck 5 V ──► Pi 2
+Mega logic: USB from Pi (recommended)
 ```
 
 - **One common ground** between PSU, drivers, Mega, Pi
@@ -380,7 +383,7 @@ cam-rig-control/
 
 | Risk | Mitigation |
 |------|------------|
-| Uno shield pin mismatch on Mega | Custom `config.h`; jumper wires; document in pin_map |
+| RAMPS clone quality | Stepper-only use is fine; ferrule power wires; skip heater outputs |
 | Pi 2 too slow for UI | Run editor on laptop; Pi runs headless services only |
 | Sony PTP complexity | Start with gphoto2 probe; implement Command protocol incrementally |
 | Lost steps on boom | Conservative accel; gearhead motors on boom axes; homing before presets |

@@ -23,8 +23,10 @@ unsigned long lastCommandMs = 0;
 bool homing = false;
 
 void setupEnable() {
-  pinMode(ENABLE_PIN, OUTPUT);
-  digitalWrite(ENABLE_PIN, LOW);  // enable drivers
+  for (int i = 0; i < NUM_AXES; i++) {
+    pinMode(ENABLE_PINS[i], OUTPUT);
+    digitalWrite(ENABLE_PINS[i], LOW);  // active LOW = drivers enabled
+  }
 }
 
 void setupLimits() {

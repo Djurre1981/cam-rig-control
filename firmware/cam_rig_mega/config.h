@@ -7,17 +7,17 @@
 #define AXIS_PITCH  3
 #define NUM_AXES    4
 
-// CNC Shield V3 (Uno pin names) jumpered to Arduino Mega 2560
-// X=boom Y=swing Z=yaw A=pitch — see docs/pin_map.md
-static const uint8_t STEP_PINS[NUM_AXES] = {2, 3, 4, 12};
-static const uint8_t DIR_PINS[NUM_AXES]  = {5, 6, 7, 13};
-static const uint8_t ENABLE_PIN = 8;  // active LOW on CNC shield
+// RAMPS 1.6 on Arduino Mega 2560 (same pin map as RAMPS 1.4)
+// X=boom  Y=swing  Z=yaw  E0=pitch — see docs/pin_map.md
+static const uint8_t STEP_PINS[NUM_AXES]  = {54, 60, 46, 26};
+static const uint8_t DIR_PINS[NUM_AXES]   = {55, 61, 48, 28};
+static const uint8_t ENABLE_PINS[NUM_AXES] = {38, 56, 62, 24};  // active LOW
 
-// Limit switches (boom only) — NC to GND, INPUT_PULLUP
-#define LIMIT_BOOM_MIN_PIN 9
-#define LIMIT_BOOM_MAX_PIN 10
+// Boom limits on RAMPS X endstop header (NC to GND, INPUT_PULLUP)
+#define LIMIT_BOOM_MIN_PIN 3   // X_MIN
+#define LIMIT_BOOM_MAX_PIN 2   // X_MAX
 
-// Steps per output revolution @ 1/16 microstepping (DRV8825 DIP)
+// Steps per output revolution @ 1/16 microstepping (DRV8825 MS pins)
 #define STEPS_PER_REV_GEARED  16576.0f  // boom, swing: 200 * 16 * 5.18
 #define STEPS_PER_REV_DIRECT   3200.0f  // yaw, pitch: plain NEMA 17
 

@@ -1,6 +1,6 @@
 # Hardware Inventory
 
-Last updated: ordered parts received / in transit.
+Last updated: RAMPS 1.6 ordered.
 
 ## On hand
 
@@ -9,37 +9,51 @@ Last updated: ordered parts received / in transit.
 | 3D printed parts | DIW 4-axis rig | Complete |
 | Arduino Mega 2560 | — | **On hand** |
 | Raspberry Pi 2 Model B V1.2 | — | On hand |
+| NEMA 17 plain | 2× | **In inventory** (yaw, pitch) |
+| DRV8825 stepper drivers | 4× | From CNC kit (move to RAMPS) |
 | Waveshare Stepper Motor HAT (B) | 2× HR8825 | Bench test only |
-| Bearings | 608ZZ, etc. | Ordered / on hand |
+| Bearings | 608ZZ, etc. | On hand / ordered |
 | Sony camera | ZV-1 II (`ZV-1M2`) | On hand |
 
 ## Ordered (in transit)
 
-| Item | Qty | Link / SKU | Notes |
-|------|-----|------------|--------|
-| CNC Shield V3 + 4× DRV8825 | 1 kit | [AliExpress 1005006718694606](https://nl.aliexpress.com/item/1005006718694606.html) | **Uno R3** form factor — jumper to Mega, do not stack |
-| NEMA 17 planetary gearmotor | 2 | [AliExpress 1005010645426451](https://nl.aliexpress.com/item/1005010645426451.html) | 17HS4401-A51M, **5.18:1**, 1.68 A, 8 mm D-shaft |
-| Slip rings | set | [AliExpress 1005002721716529](https://nl.aliexpress.com/item/1005002721716529.html) | Per DIW BOM |
+| Item | Qty | Notes |
+|------|-----|--------|
+| **RAMPS 1.6** | 1 | Stacks on Mega; screw-terminal power ([RepRap wiki](https://www.reprap.org/wiki/RAMPS_1.6)) |
+| NEMA 17 planetary gearmotor | 2 | 17HS4401-A51M, **5.18:1**, 1.68 A, 8 mm D-shaft (boom, swing) |
+| Slip rings | set | Per DIW BOM |
+
+## Production electronics stack
+
+```
+Raspberry Pi 2 ──USB──► Arduino Mega 2560
+                              │
+                         RAMPS 1.6 (stacked)
+                              │
+                    4× DRV8825 → 4× NEMA 17
+```
+
+| Item | Role |
+|------|------|
+| Mega + RAMPS 1.6 | 4-axis motion |
+| DRV8825 × 4 | In RAMPS Pololu slots (from CNC kit) |
+| Uno CNC shield | **Not used** — drivers only |
 
 ## Motors — complete set (4/4)
 
-| Axis | Name | Motor | CNC slot | Status |
-|------|------|-------|----------|--------|
-| 0 | `boom` | 17HS4401-A51M, **5.18:1** planetary | X | Ordered |
-| 1 | `swing` | 17HS4401-A51M, **5.18:1** planetary | Y | Ordered |
-| 2 | `yaw` | Plain NEMA 17 | Z | **In inventory** |
-| 3 | `pitch` | Plain NEMA 17 | A | **In inventory** |
+| Axis | Name | Motor | RAMPS slot | Status |
+|------|------|-------|------------|--------|
+| 0 | `boom` | 17HS4401-A51M, **5.18:1** planetary | **X** | Ordered |
+| 1 | `swing` | 17HS4401-A51M, **5.18:1** planetary | **Y** | Ordered |
+| 2 | `yaw` | Plain NEMA 17 | **Z** | In inventory |
+| 3 | `pitch` | Plain NEMA 17 | **E0** | In inventory |
 
 ### Electrical summary
 
 | Motor | Current / phase | Steps / output rev @ 1/16 µstep |
 |-------|-----------------|----------------------------------|
-| Planetary (boom, swing) | 1.68 A | 16 576 (~46.0 / degree) |
-| Plain (yaw, pitch) | Set per motor label (~1.5–1.7 A typical) | 3 200 (~8.9 / degree) |
-
-Tune DRV8825 pots separately: higher current on geared axes if labeled higher; plain motors per their datasheet.
-
-**DRV8825 trim:** set Vref for ~1.5–1.7 A per phase (measure with multimeter per your board’s formula; many clone boards use `I ≈ Vref × 2` with 0.1 Ω sense).
+| Planetary (X, Y) | 1.68 A | 16 576 (~46.0°/deg) |
+| Plain (Z, E0) | Per label (~1.5–1.7 A) | 3 200 (~8.9°/deg) |
 
 ## Still to order
 
@@ -47,11 +61,11 @@ Tune DRV8825 pots separately: higher current on geared axes if labeled higher; p
 |------|-----|--------|
 | PSU | 1 | 12–24 V, ≥10 A |
 | 5 V buck | 1 | ≥3 A for Pi 2 |
-| Limit switches | 2 | Boom min + max |
-| USB cable A→B | 1 | Pi ↔ Mega (data) |
-| USB cable | 1 | Pi ↔ ZV-1 II (data) |
-| Jumper wires | 1 set | Mega ↔ CNC shield |
-| Optional: heatsinks | 4 | DRV8825 under load |
+| Limit switches | 2 | Boom → RAMPS X_MIN / X_MAX |
+| USB cable A→B | 1 | Pi ↔ Mega |
+| USB cable | 1 | Pi ↔ ZV-1 II |
+| Wire ferrules | — | For RAMPS 1.6 screw terminals |
+| Optional: DRV8825 heatsinks | 4 | Under continuous motion |
 
 ## Axis map (software)
 
@@ -66,8 +80,9 @@ Tune DRV8825 pots separately: higher current on geared axes if labeled higher; p
 
 | Item | Reason |
 |------|--------|
-| Uno R3 from CNC kit | Use Mega only; kit USB cable for Mega |
-| Waveshare HAT (production) | 2 drivers; Linux timing |
+| Uno CNC shield | Replaced by RAMPS 1.6 |
+| RAMPS heater outputs (D8–D10) | No bed/hotend |
+| Waveshare HAT (production) | Pi GPIO stepping |
 | GRBL | Custom velocity firmware |
-| NEMA 8 focus/zoom | ZV-1 II remote zoom/focus |
-| Sony Camera Remote SDK | ZV-1 II not in SDK list |
+| NEMA 8 focus/zoom | ZV-1 II remote control |
+| Sony Camera Remote SDK | ZV-1 II not listed |

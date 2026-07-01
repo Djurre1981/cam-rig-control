@@ -6,7 +6,7 @@ Custom motion control stack for a 4-axis DIY camera arm ([DIW rig](https://www.t
 
 | Layer | Technology |
 |-------|------------|
-| Motion | Arduino Mega 2560 + custom velocity firmware |
+| Motion | Arduino Mega 2560 + RAMPS 1.6 + DRV8825 |
 | Host | Raspberry Pi 2 Model B (headless) |
 | Camera | Sony Camera Remote Command (PTP/USB) |
 | UI | React timeline + live jog (browser on laptop) |
