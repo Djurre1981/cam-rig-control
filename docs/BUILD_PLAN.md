@@ -394,6 +394,7 @@ cam-rig-control/
 
 ## References
 
+- [Bottango](https://github.com/EvanBottango/Bottango) — timeline/effector UX reference; see `docs/BOTANGO_ADAPTATION.md`
 - [DIW Thingiverse](https://www.thingiverse.com/thing:4652484)
 - [Build video](https://www.youtube.com/watch?v=UMwUnzjZ8Ao)
 - [Lukens4242 construction docs](https://github.com/Lukens4242/CNC_6-axis_motion_control_docs)

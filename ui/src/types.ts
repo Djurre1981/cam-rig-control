@@ -1,6 +1,12 @@
 export type MotorClipType = "JogClip" | "MoveClip" | "RecordedClip";
 export type CameraClipType = "RecordClip" | "ZoomClip" | "FocusClip";
 
+/** Speed keyframe: t ∈ [0,1] along clip (playback), v ∈ [0,1] (0%–100% of axis max). */
+export type SpeedKeyframe = {
+  t: number;
+  v: number;
+};
+
 export type MotorClip = {
   id: string;
   type: MotorClipType;
@@ -10,6 +16,9 @@ export type MotorClip = {
   from_pos?: number;
   to_pos?: number;
   label?: string;
+  reversed?: boolean;
+  /** Speed envelope inside the clip (motor clips only). */
+  speed_curve?: SpeedKeyframe[];
 };
 
 export type MotorTrack = {
@@ -17,6 +26,7 @@ export type MotorTrack = {
   axis: number;
   label: string;
   color: string;
+  row_height?: number;
   clips: MotorClip[];
 };
 
@@ -29,6 +39,7 @@ export type CameraClip = {
   from_zoom?: number;
   to_zoom?: number;
   label?: string;
+  reversed?: boolean;
 };
 
 export type CameraTrackId = "record" | "zoom" | "focus";
@@ -37,6 +48,7 @@ export type CameraTrack = {
   id: CameraTrackId;
   label: string;
   color: string;
+  row_height?: number;
   clips: CameraClip[];
 };
 
@@ -53,13 +65,24 @@ export type ClipSelection =
   | { kind: "camera"; trackId: CameraTrackId; clipId: string }
   | null;
 
+export type PaletteItemDefaults = {
+  duration?: number;
+  velocity?: number;
+  from_pos?: number;
+  to_pos?: number;
+  label?: string;
+  action?: string;
+  from_zoom?: number;
+  to_zoom?: number;
+};
+
 export type PaletteItem = {
   id: string;
   label: string;
   description: string;
   clipType: MotorClipType | CameraClipType;
   target: "motor" | CameraTrackId;
-  defaults: Partial<MotorClip & CameraClip>;
+  defaults: PaletteItemDefaults;
   color: string;
 };
 

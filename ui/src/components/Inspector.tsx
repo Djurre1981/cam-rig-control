@@ -1,8 +1,18 @@
 import type { ClipSelection, TimelineProject } from "../types";
+import {
+  axisLimitLabel,
+  axisVelocityCap,
+  clampAxisVelocity,
+  formatAxisMaxVel,
+  ROTATION_UNITS_PER_REV,
+  rotationUnitsToDeg,
+  usesRotationUnits,
+} from "../lib/motionLimits";
 
 type Props = {
   project: TimelineProject;
   selection: ClipSelection;
+  speedPercent: number;
   onUpdateProject: (p: TimelineProject) => void;
   onDeleteSelection: () => void;
 };
@@ -10,6 +20,7 @@ type Props = {
 export function Inspector({
   project,
   selection,
+  speedPercent,
   onUpdateProject,
   onDeleteSelection,
 }: Props) {
@@ -30,6 +41,12 @@ export function Inspector({
             <dt>Camera tracks</dt>
             <dd>{project.camera_tracks.length}</dd>
           </dl>
+          <h4 className="inspector-limits-title">Axis speed limits (100%)</h4>
+          <ul className="inspector-limits">
+            {[0, 1, 2, 3].map((i) => (
+              <li key={i}>{axisLimitLabel(i)}</li>
+            ))}
+          </ul>
         </div>
       </aside>
     );
@@ -87,8 +104,22 @@ export function Inspector({
             <input
               type="number"
               value={clip.velocity ?? 0}
-              onChange={(e) => patch({ velocity: Number(e.target.value) })}
+              max={axisVelocityCap(track.axis, speedPercent)}
+              min={-axisVelocityCap(track.axis, speedPercent)}
+              onChange={(e) =>
+                patch({
+                  velocity: clampAxisVelocity(
+                    track.axis,
+                    Number(e.target.value),
+                    speedPercent
+                  ),
+                })
+              }
             />
+            <span className="field-hint">
+              Max at {speedPercent}%: ±{Math.round(axisVelocityCap(track.axis, speedPercent))}{" "}
+              (100% = {formatAxisMaxVel(track.axis)})
+            </span>
           </label>
         )}
         {clip.type === "MoveClip" && (
@@ -100,6 +131,11 @@ export function Inspector({
                 value={clip.from_pos ?? 0}
                 onChange={(e) => patch({ from_pos: Number(e.target.value) })}
               />
+              {usesRotationUnits(track.axis) && (
+                <span className="field-hint">
+                  {rotationUnitsToDeg(clip.from_pos ?? 0).toFixed(1)}° · 10 units/°, {ROTATION_UNITS_PER_REV} = 360°
+                </span>
+              )}
             </label>
             <label>
               To position
@@ -108,6 +144,12 @@ export function Inspector({
                 value={clip.to_pos ?? 0}
                 onChange={(e) => patch({ to_pos: Number(e.target.value) })}
               />
+              {usesRotationUnits(track.axis) && (
+                <span className="field-hint">
+                  {rotationUnitsToDeg(clip.to_pos ?? 0).toFixed(1)}° · Δ{" "}
+                  {rotationUnitsToDeg((clip.to_pos ?? 0) - (clip.from_pos ?? 0)).toFixed(1)}°
+                </span>
+              )}
             </label>
           </>
         )}

@@ -1,14 +1,19 @@
 import { useCallback, useState } from "react";
 import { ClipPalette } from "./components/ClipPalette";
+import { EffectorBar } from "./components/EffectorBar";
 import { Inspector } from "./components/Inspector";
 import { LivePanel } from "./components/LivePanel";
 import { PresetSidebar } from "./components/PresetSidebar";
+import { RigPreview } from "./components/RigPreview";
 import { TimelineEditor } from "./components/TimelineEditor";
 import { TransportBar } from "./components/TransportBar";
+import { WorkspaceResizer } from "./components/WorkspaceResizer";
 import { CLIP_PALETTE } from "./data/palette";
 import demoShowcase from "./data/demo_showcase.json";
 import exampleSlowSwing from "./data/example_slow_swing.json";
 import { usePlayback } from "./hooks/usePlayback";
+import { defaultSpeedCurve } from "./lib/speedCurve";
+import { packClipStarts } from "./lib/timelineTrackChain";
 import { MOTOR_TRACK_COLORS, type ClipSelection, type TimelineProject } from "./types";
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE !== "false";
@@ -18,11 +23,19 @@ function normalizeProject(raw: TimelineProject): TimelineProject {
   p.tracks = p.tracks.map((t, i) => ({
     ...t,
     color: t.color ?? MOTOR_TRACK_COLORS[i],
-    clips: t.clips.map((c) => ({ ...c, id: c.id ?? `legacy_${Math.random()}` })),
+    clips: packClipStarts(
+      t.clips.map((c) => ({
+        ...c,
+        id: c.id ?? `legacy_${Math.random()}`,
+        speed_curve: c.speed_curve ?? defaultSpeedCurve(c.type),
+      }))
+    ),
   }));
   p.camera_tracks = (p.camera_tracks ?? []).map((t) => ({
     ...t,
-    clips: t.clips.map((c) => ({ ...c, id: c.id ?? `legacy_${Math.random()}` })),
+    clips: packClipStarts(
+      t.clips.map((c) => ({ ...c, id: c.id ?? `legacy_${Math.random()}` }))
+    ),
   }));
   return p;
 }
@@ -57,10 +70,12 @@ export default function App() {
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [liveRecording, setLiveRecording] = useState(false);
   const [velocities, setVelocities] = useState([0, 0, 0, 0]);
-
-  const { playing, playhead, speed, setSpeed, play, pause, stop, seek } = usePlayback(
-    project.duration
+  const [speedPercent, setSpeedPercent] = useState(100);
+  const [activePaletteItem, setActivePaletteItem] = useState(
+    () => CLIP_PALETTE.find((p) => p.id === "move") ?? CLIP_PALETTE[0]
   );
+
+  const { playing, playhead, play, pause, stop, scrub } = usePlayback(project.duration);
 
   const deleteSelection = useCallback(() => {
     if (!selection) return;
@@ -119,35 +134,61 @@ export default function App() {
         <div className="workspace timeline-workspace">
           <div className="workspace-left">
             <PresetSidebar projectName={project.name} onSelectPreset={loadPreset} />
-            <ClipPalette items={CLIP_PALETTE} />
+            <ClipPalette
+              items={CLIP_PALETTE}
+              selectedId={activePaletteItem?.id ?? null}
+              onSelect={setActivePaletteItem}
+            />
           </div>
 
           <main className="workspace-center">
-            <TransportBar
-              playhead={playhead}
-              duration={project.duration}
-              playing={playing}
-              speed={speed}
-              onPlay={play}
-              onPause={pause}
-              onStop={stop}
-              onSpeedChange={setSpeed}
-            />
-            <TimelineEditor
-              project={project}
-              playhead={playhead}
-              selection={selection}
-              snapEnabled={snapEnabled}
-              onSnapToggle={setSnapEnabled}
-              onProjectChange={setProject}
-              onSelect={setSelection}
-              onSeek={seek}
-            />
+            <WorkspaceResizer>
+              {[
+                <div key="preview" className="center-preview-row">
+                  <RigPreview
+                    project={project}
+                    playhead={playhead}
+                    speedPercent={speedPercent}
+                    docked
+                  />
+                </div>,
+                <div key="timeline-stack" className="timeline-stack">
+                  <TransportBar
+                    playhead={playhead}
+                    duration={project.duration}
+                    playing={playing}
+                    speedPercent={speedPercent}
+                    onPlay={play}
+                    onPause={pause}
+                    onStop={stop}
+                    onSpeedPercentChange={setSpeedPercent}
+                  />
+                  <EffectorBar
+                    project={project}
+                    playhead={playhead}
+                    playing={playing}
+                    speedPercent={speedPercent}
+                  />
+                  <TimelineEditor
+                    project={project}
+                    playhead={playhead}
+                    selection={selection}
+                    snapEnabled={snapEnabled}
+                    activePaletteItem={activePaletteItem}
+                    onSnapToggle={setSnapEnabled}
+                    onProjectChange={setProject}
+                    onSelect={setSelection}
+                    onSeek={scrub}
+                  />
+                </div>,
+              ]}
+            </WorkspaceResizer>
           </main>
 
           <Inspector
             project={project}
             selection={selection}
+            speedPercent={speedPercent}
             onUpdateProject={setProject}
             onDeleteSelection={deleteSelection}
           />
@@ -155,27 +196,41 @@ export default function App() {
       )}
 
       {view === "live" && (
-        <LivePanel
-          velocities={velocities}
-          onVelocityChange={(axis, v) => {
-            const next = [...velocities];
-            next[axis] = v;
-            setVelocities(next);
-          }}
-          onStopAll={() => setVelocities([0, 0, 0, 0])}
-          recording={liveRecording}
-          onToggleRecord={() => setLiveRecording((r) => !r)}
-          demoMode={DEMO_MODE}
-        />
+        <div className="live-workspace">
+          <RigPreview
+            project={project}
+            playhead={playhead}
+            speedPercent={speedPercent}
+            liveVelocities={velocities}
+            compact
+          />
+          <LivePanel
+            velocities={velocities}
+            speedPercent={speedPercent}
+            onSpeedPercentChange={setSpeedPercent}
+            onVelocityChange={(axis, v) => {
+              const next = [...velocities];
+              next[axis] = v;
+              setVelocities(next);
+            }}
+            onStopAll={() => setVelocities([0, 0, 0, 0])}
+            recording={liveRecording}
+            onToggleRecord={() => setLiveRecording((r) => !r)}
+            demoMode={DEMO_MODE}
+          />
+        </div>
       )}
 
       <footer className="app-footer">
         <span>
           Design refs:{" "}
+          <a href="https://github.com/EvanBottango/Bottango" target="_blank" rel="noreferrer">
+            Bottango
+          </a>
+          ,{" "}
           <a href="https://www.dragonframe.com/dragonframe-software/" target="_blank" rel="noreferrer">
             Dragonframe Arc
           </a>
-          , NLE multi-track editors
         </span>
         <span>v0.2 demo · {project.duration}s timeline</span>
       </footer>

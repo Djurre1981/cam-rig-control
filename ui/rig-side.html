@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIW rig — side view</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: #fff;
+        color: #5a6270;
+        font: 14px "Segoe UI", system-ui, sans-serif;
+      }
+      h1 {
+        margin: 1rem 0 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2a3040;
+      }
+      .labels {
+        display: flex;
+        justify-content: space-between;
+        width: min(1120px, 96vw);
+        padding: 0 0.25rem;
+      }
+      .labels strong {
+        color: #2a3040;
+      }
+      canvas {
+        width: min(1120px, 96vw);
+        height: auto;
+        aspect-ratio: 2 / 1;
+        border: 1px solid #d0d4dc;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DIW 4-axis rig — side elevation</h1>
+    <div class="labels">
+      <span><strong>← BACK</strong> counterweight / electronics</span>
+      <span><strong>CAMERA →</strong> front / lens</span>
+    </div>
+    <canvas id="canvas" width="1120" height="560"></canvas>
+    <script type="module" src="/src/rigSideRender.ts"></script>
+  </body>
+</html>

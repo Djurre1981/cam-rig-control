@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 export function usePlayback(duration: number) {
   const [playing, setPlaying] = useState(false);
   const [playhead, setPlayhead] = useState(0);
-  const [speed, setSpeed] = useState(1);
   const playheadRef = useRef(0);
   const rafRef = useRef<number>(0);
 
@@ -16,7 +15,7 @@ export function usePlayback(duration: number) {
     const startPlayhead = playheadRef.current;
 
     const tick = () => {
-      const elapsed = ((performance.now() - startWall) / 1000) * speed;
+      const elapsed = (performance.now() - startWall) / 1000;
       const t = startPlayhead + elapsed;
       if (t >= duration) {
         setPlayhead(duration);
@@ -29,7 +28,7 @@ export function usePlayback(duration: number) {
 
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [playing, duration, speed]);
+  }, [playing, duration]);
 
   const play = () => {
     if (playheadRef.current >= duration) setPlayhead(0);
@@ -47,5 +46,11 @@ export function usePlayback(duration: number) {
     setPlayhead(Math.max(0, Math.min(duration, t)));
   };
 
-  return { playing, playhead, speed, setSpeed, play, pause, stop, seek };
+  /** Bottango-style: scrubbing pauses playback unless play is explicitly resumed. */
+  const scrub = (t: number) => {
+    setPlaying(false);
+    seek(t);
+  };
+
+  return { playing, playhead, play, pause, stop, seek, scrub };
 }

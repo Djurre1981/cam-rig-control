@@ -22,8 +22,10 @@ class TimelineEngine:
     def load(self, path: Path) -> None:
         self.project = json.loads(path.read_text(encoding="utf-8"))
 
-    def frame_at(self, t: float) -> PlaybackFrame:
+    def frame_at(self, t: float, speed_percent: float = 100.0) -> PlaybackFrame:
         """Sample all tracks at time t (v0.1: constant-velocity clips only)."""
+        from motion_limits import clamp_axis_velocity
+
         v = [0.0, 0.0, 0.0, 0.0]
         camera: dict[str, Any] = {}
         if not self.project:
@@ -36,7 +38,8 @@ class TimelineEngine:
                 dur = clip.get("duration", 0)
                 if start <= t < start + dur:
                     if clip.get("type") == "JogClip" and axis is not None:
-                        v[axis] = clip.get("velocity", 0.0)
+                        raw = clip.get("velocity", 0.0)
+                        v[axis] = clamp_axis_velocity(axis, raw, speed_percent)
                     break
 
         for track in self.project.get("camera_tracks", []):

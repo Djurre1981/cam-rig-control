@@ -21,8 +21,9 @@ static const uint8_t ENABLE_PINS[NUM_AXES] = {38, 56, 62, 24};  // active LOW
 #define STEPS_PER_REV_GEARED  16576.0f  // boom, swing: 200 * 16 * 5.18
 #define STEPS_PER_REV_DIRECT   3200.0f  // yaw, pitch: plain NEMA 17
 
-// Motion limits (steps/s) — tune on hardware
-static const float MAX_VEL[NUM_AXES]  = {600, 800, 1200, 1200};
+// Motion limits (steps/s) — from min traverse times (see ui/src/lib/motionLimits.ts)
+// Boom 60°/2s, Swing 360°/4s, Yaw/Pitch 360°/2s @ 1/16 μstep
+static const float MAX_VEL[NUM_AXES]  = {1381, 4144, 1600, 1600};
 static const float MAX_ACCEL[NUM_AXES] = {300, 400, 600, 600};
 
 static const bool INVERT_DIR[NUM_AXES] = {false, false, false, false};

@@ -36,11 +36,12 @@
       "clips": [
         {
           "id": "c_swing1",
-          "type": "JogClip",
+          "type": "MoveClip",
           "start": 2,
-          "duration": 12,
-          "velocity": 90,
-          "label": "Orbit"
+          "duration": 4,
+          "from_pos": 0,
+          "to_pos": 3600,
+          "label": "Full orbit"
         }
       ]
     },

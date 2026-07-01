@@ -12,7 +12,7 @@ type Props = {
 export function PresetSidebar({ projectName, onSelectPreset }: Props) {
   return (
     <aside className="preset-sidebar">
-      <h3>Presets</h3>
+      <h3>Animations</h3>
       <ul className="preset-list">
         {DEMO_PRESETS.map((p) => (
           <li key={p.id}>
