@@ -7,11 +7,7 @@ Motion-controlled 4-axis camera arm based on the [DIW CNC camera rig](https://ww
 | Area | Status |
 |------|--------|
 | 3D printed parts | Done |
-| Arduino Mega 2560 | **On hand** |
-| RAMPS 1.6 + Mega 2560 | **On hand / ordered** — production stack |
-| DRV8825 × 4 | From CNC kit → RAMPS Pololu slots |
-| Slip rings | Ordered ([link](https://nl.aliexpress.com/item/1005002721716529.html)) |
-| Stepper motors | **4/4** — 2× plain (stock) + 2× 5.18:1 planetary (ordered) |
+| Electronics & hardware | **Complete** — all parts in supply |
 | Mechanical assembly | Not started |
 | Firmware + host + UI | v0.1 scaffold in repo |
 
@@ -55,39 +51,28 @@ Motion-controlled 4-axis camera arm based on the [DIW CNC camera rig](https://ww
 
 ## Phase 0 — Procurement checklist
 
-### Already done / ordered
+**Complete.** All printed parts, electronics, motors, power, cabling, and mechanical hardware are in supply.
 
 - [x] All printed parts
-- [x] Arduino Mega 2560 (on hand)
-- [x] RAMPS 1.6 shield (ordered)
-- [x] 4× DRV8825 drivers (from CNC kit — install on RAMPS)
-- [x] 4× NEMA 17 motors (2× plain in stock + 2× 17HS4401-A51M 5.18:1 ordered)
-- [x] Slip rings
-- [x] Bearings (608ZZ, etc.)
+- [x] Arduino Mega 2560
+- [x] RAMPS 1.6 shield
+- [x] 4× DRV8825 drivers (CNC kit → RAMPS)
+- [x] 4× NEMA 17 motors (2× plain + 2× 17HS4401-A51M 5.18:1)
+- [x] Slip rings and bearings
+- [x] PSU (12–24 V, ≥10 A) and 5 V buck for Pi
+- [x] Limit switches (boom min/max)
+- [x] USB cables (Pi↔Mega, Pi↔ZV-1 II)
+- [x] Wire ferrules, connectors, heat shrink
+- [x] Aluminum tube and M3/M4/M5/M8 hardware (DIW BOM)
+- [x] Optional: DRV8825 heatsinks
 
-### Still to order
-
-| Item | Qty | Notes |
-|------|-----|--------|
-| Power supply | 1 | 12–24 V, ≥10 A for 4 motors |
-| DC buck converter | 1 | 5 V, ≥3 A for Pi 2 |
-| Limit switches | 2 | Boom → RAMPS X_MIN / X_MAX |
-| Wire ferrules | — | RAMPS 1.6 screw terminals |
-| USB cable A→B | 1 | Pi ↔ Mega (data) |
-| USB cable | 1 | Pi ↔ ZV-1 II (data-capable) |
-| Wire, connectors, heat shrink | — | CAT5e stranded per DIW docs |
-| M3/M4/M5/M8 hardware | — | See [DIW hardware BOM](https://github.com/Lukens4242/CNC_6-axis_motion_control_docs/blob/main/BOM%20Hardware.ods) |
-| Aluminum tube | — | 3/4" and 1" per README cut lengths |
-| Optional: DRV8825 heatsinks | 4 | Recommended under load |
-| Optional: Wi-Fi dongle | 1 | If Pi 2 not on Ethernet |
-
-### On hand (use as planned)
+### On hand (bench / retired)
 
 | Item | Use |
 |------|-----|
 | Raspberry Pi 2 Model B V1.2 | Headless host |
 | Waveshare Stepper Motor HAT (B) | **Bench test only** (2 motors) |
-| Uno CNC shield | **Retired** — DRV8825s moved to RAMPS |
+| Uno CNC shield | **Retired** — DRV8825s on RAMPS |
 
 ---
 
@@ -397,7 +382,7 @@ cam-rig-control/
 |------|--------|
 | 1 | Mechanical: base, slew, turret |
 | 2 | Mechanical: boom, head, slip rings |
-| 3 | Order remaining parts; wire bench harness |
+| 3 | Wire bench harness (Mega + RAMPS); start electrical |
 | 4 | Firmware bring-up, 1–4 axes |
 | 5 | Pi OS + motion_service + serial jog |
 | 6 | Camera service + ZV-1 II USB tests |

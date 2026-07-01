@@ -58,9 +58,9 @@ Open `http://localhost:5173` (proxies API when configured).
 | Component | Status |
 |-----------|--------|
 | 3D printed parts | Complete |
+| Hardware / electronics | **Complete** — all in supply |
 | Mechanical assembly | Not started |
-| Motors | 2/4 ordered |
-| Firmware | v0.1 scaffold |
+| Firmware | v0.1 — RAMPS pin map |
 | Host services | v0.1 scaffold |
 | UI timeline | v0.1 scaffold |
 | Sony PTP backend | Stub |
