@@ -1,6 +1,7 @@
 import { LivePanel } from "./LivePanel";
 import { Inspector } from "./Inspector";
 import type { RigPose } from "../lib/rigKinematics";
+import type { TargetLockMode } from "../lib/liveMotion";
 import type { ClipSelection, TimelineProject } from "../types";
 
 type Props = {
@@ -9,16 +10,20 @@ type Props = {
   speedPercent: number;
   livePose: RigPose;
   velocities: number[];
-  liveRecording: boolean;
+  zoomVelocity: number;
   demoMode: boolean;
+  targetLock: TargetLockMode;
+  onTargetLockChange: (mode: TargetLockMode) => void;
   onUpdateProject: (p: TimelineProject) => void;
   onDeleteSelection: () => void;
   onSpeedPercentChange: (pct: number) => void;
   onVelocityChange: (axis: number, value: number) => void;
+  onZoomVelocityChange: (value: number) => void;
   onAxisStop: (axis: number) => void;
+  onZoomStop: () => void;
   onAxisHome: (axis: number) => void;
-  onStopAll: () => void;
-  onToggleRecord: () => void;
+  onZoomHome: () => void;
+  onHomeAll: () => void;
 };
 
 export function RightSidebar({
@@ -27,16 +32,20 @@ export function RightSidebar({
   speedPercent,
   livePose,
   velocities,
-  liveRecording,
+  zoomVelocity,
   demoMode,
+  targetLock,
+  onTargetLockChange,
   onUpdateProject,
   onDeleteSelection,
   onSpeedPercentChange,
   onVelocityChange,
+  onZoomVelocityChange,
   onAxisStop,
+  onZoomStop,
   onAxisHome,
-  onStopAll,
-  onToggleRecord,
+  onZoomHome,
+  onHomeAll,
 }: Props) {
   return (
     <aside className="right-sidebar">
@@ -44,14 +53,18 @@ export function RightSidebar({
         embedded
         pose={livePose}
         velocities={velocities}
+        zoomVelocity={zoomVelocity}
         speedPercent={speedPercent}
+        targetLock={targetLock}
+        onTargetLockChange={onTargetLockChange}
         onSpeedPercentChange={onSpeedPercentChange}
         onVelocityChange={onVelocityChange}
+        onZoomVelocityChange={onZoomVelocityChange}
         onAxisStop={onAxisStop}
+        onZoomStop={onZoomStop}
         onAxisHome={onAxisHome}
-        onStopAll={onStopAll}
-        recording={liveRecording}
-        onToggleRecord={onToggleRecord}
+        onZoomHome={onZoomHome}
+        onHomeAll={onHomeAll}
         demoMode={demoMode}
       />
       <div className="right-sidebar-divider" role="separator" />

@@ -29,6 +29,12 @@ import {
 import { resolveDropTrack } from "../lib/trackResolver";
 import { clampDuration, snapTime, uid } from "../lib/timelineUtils";
 import {
+  contentDuration,
+  MIN_TIMELINE_DURATION_SEC,
+  requiredTimelineDuration,
+  viewportEndTime,
+} from "../lib/timelineDuration";
+import {
   DEFAULT_CAMERA_ROW_HEIGHT,
   DEFAULT_MOTOR_ROW_HEIGHT,
   DEFAULT_PIXELS_PER_SECOND,
@@ -57,6 +63,7 @@ type Props = {
   activePaletteItem: PaletteItem | null;
   onSnapToggle: (v: boolean) => void;
   onProjectChange: (p: TimelineProject) => void;
+  onEnsureDuration: (minDuration: number) => void;
   onSelect: (s: ClipSelection) => void;
   onSeek: (t: number) => void;
   hiddenTrackIds?: ReadonlySet<string>;
@@ -96,6 +103,7 @@ export function TimelineEditor({
   activePaletteItem,
   onSnapToggle,
   onProjectChange,
+  onEnsureDuration,
   onSelect,
   onSeek,
   hiddenTrackIds,
@@ -105,9 +113,24 @@ export function TimelineEditor({
   const lanesRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const projectRef = useRef(project);
+  const ensureDurationRef = useRef(onEnsureDuration);
+
+  projectRef.current = project;
+  ensureDurationRef.current = onEnsureDuration;
 
   const pps = pixelsPerSecond;
   const width = project.duration * pps;
+
+  const syncViewportDuration = useCallback(() => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const end = viewportEndTime(scroll.scrollLeft, scroll.clientWidth, pps, TRACK_LABEL_WIDTH);
+    const needed = requiredTimelineDuration(projectRef.current, end);
+    if (needed > projectRef.current.duration) {
+      ensureDurationRef.current(needed);
+    }
+  }, [pps]);
 
   const timeFromX = useCallback(
     (clientX: number, laneLeft: number) => {
@@ -200,7 +223,6 @@ export function TimelineEditor({
         track.clips,
         { id: newId, start: 0, duration: defaultDuration },
         start,
-        project.duration,
         snapEnabled
       );
       if (!chain) return;
@@ -234,7 +256,6 @@ export function TimelineEditor({
       track.clips,
       { id: newId, start: 0, duration: defaultDuration },
       start,
-      project.duration,
       snapEnabled
     );
     if (!chain) return;
@@ -336,6 +357,7 @@ export function TimelineEditor({
         const scroll = scrollRef.current;
         if (!scroll) return;
         scroll.scrollLeft = Math.max(0, drag.startScrollLeft - (e.clientX - drag.startX));
+        syncViewportDuration();
         return;
       }
 
@@ -363,12 +385,7 @@ export function TimelineEditor({
           track.clips = moveClipInChain(track.clips, clip.id, t, snapEnabled);
         } else {
           const end = timeFromX(e.clientX, rect.left);
-          track.clips = resizeClipInChain(
-            track.clips,
-            clip.id,
-            end - clip.start,
-            project.duration
-          );
+          track.clips = resizeClipInChain(track.clips, clip.id, end - clip.start);
         }
       } else {
         const track = next.camera_tracks.find((t) => t.id === drag.trackId);
@@ -380,18 +397,13 @@ export function TimelineEditor({
           track.clips = moveClipInChain(track.clips, clip.id, t, snapEnabled);
         } else {
           const end = timeFromX(e.clientX, rect.left);
-          track.clips = resizeClipInChain(
-            track.clips,
-            clip.id,
-            end - clip.start,
-            project.duration
-          );
+          track.clips = resizeClipInChain(track.clips, clip.id, end - clip.start);
         }
       }
 
       onProjectChange(next);
     },
-    [drag, project, timeFromX, onProjectChange, onSeek]
+    [drag, project, timeFromX, onProjectChange, onSeek, syncViewportDuration]
   );
 
   const onPointerUp = useCallback(() => setDrag(null), []);
@@ -421,9 +433,10 @@ export function TimelineEditor({
       requestAnimationFrame(() => {
         const newAnchorX = TRACK_LABEL_WIDTH + timeAtMouse * nextPps;
         scroll.scrollLeft = Math.max(0, newAnchorX - (clientX - rect.left));
+        syncViewportDuration();
       });
     },
-    [pps]
+    [pps, syncViewportDuration]
   );
 
   const onTimelineWheel = (e: React.WheelEvent) => {
@@ -439,6 +452,7 @@ export function TimelineEditor({
 
     const delta = e.shiftKey ? e.deltaY * 1.5 : e.deltaY + e.deltaX;
     scroll.scrollLeft = Math.max(0, scroll.scrollLeft + delta);
+    syncViewportDuration();
   };
 
   const startPan = (clientX: number) => {
@@ -450,10 +464,25 @@ export function TimelineEditor({
   const zoomToFit = () => {
     const scroll = scrollRef.current;
     if (!scroll) return;
-    const fit = pixelsPerSecondForFit(project.duration, scroll.clientWidth, TRACK_LABEL_WIDTH);
+    const content = Math.max(contentDuration(project), MIN_TIMELINE_DURATION_SEC);
+    const fit = pixelsPerSecondForFit(content, scroll.clientWidth, TRACK_LABEL_WIDTH);
     setPixelsPerSecond(fit);
     scroll.scrollLeft = 0;
+    const visibleEnd = viewportEndTime(0, scroll.clientWidth, fit, TRACK_LABEL_WIDTH);
+    onEnsureDuration(requiredTimelineDuration(project, visibleEnd));
   };
+
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const onScroll = () => syncViewportDuration();
+    scroll.addEventListener("scroll", onScroll);
+    return () => scroll.removeEventListener("scroll", onScroll);
+  }, [syncViewportDuration]);
+
+  useEffect(() => {
+    syncViewportDuration();
+  }, [pps, project.duration, syncViewportDuration]);
 
   const renderMotorClip = (
     track: (typeof project.tracks)[0],

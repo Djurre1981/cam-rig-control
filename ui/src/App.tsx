@@ -15,6 +15,7 @@ import { CameraViewPreview } from "./components/CameraViewPreview";
 import { RigPreview } from "./components/RigPreview";
 
 import { ViewMenu } from "./components/ViewMenu";
+import { CollapsibleSidebar } from "./components/CollapsibleSidebar";
 
 import { TimelineEditor } from "./components/TimelineEditor";
 
@@ -27,6 +28,8 @@ import { CLIP_PALETTE } from "./data/palette";
 import { usePlayback } from "./hooks/usePlayback";
 
 import { useLivePose } from "./hooks/useLivePose";
+
+import type { TargetLockMode } from "./lib/liveMotion";
 
 import {
 
@@ -51,6 +54,7 @@ import {
 } from "./lib/animationLibrary";
 
 import { normalizeProject, projectsEqual } from "./lib/normalizeProject";
+import { ensureTimelineDuration, extendTimelineDuration } from "./lib/timelineDuration";
 
 import {
   isTrackVisible,
@@ -89,17 +93,27 @@ export default function App() {
 
   const [project, setProject] = useState<TimelineProject>(() => loadAnimationProject("demo")!);
 
+  const updateProject = useCallback((p: TimelineProject) => {
+    setProject(ensureTimelineDuration(p));
+  }, []);
+
+  const ensureDuration = useCallback((minDuration: number) => {
+    setProject((p) => extendTimelineDuration(p, minDuration));
+  }, []);
+
   const [savedProject, setSavedProject] = useState<TimelineProject>(() => loadAnimationProject("demo")!);
 
   const [selection, setSelection] = useState<ClipSelection>(null);
 
   const [snapEnabled, setSnapEnabled] = useState(true);
 
-  const [liveRecording, setLiveRecording] = useState(false);
-
   const [velocities, setVelocities] = useState([0, 0, 0, 0]);
 
+  const [zoomVelocity, setZoomVelocity] = useState(0);
+
   const [speedPercent, setSpeedPercent] = useState(100);
+
+  const [targetLock, setTargetLock] = useState<TargetLockMode>("off");
 
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
 
@@ -145,12 +159,15 @@ export default function App() {
 
   const { playing, playhead, play, pause, stop, scrub } = usePlayback(project.duration);
 
-  const { pose: livePose, startHoming, cancelHoming, cancelAllHoming } = useLivePose(
+  const { pose: livePose, startHoming, startZoomHoming, homeAll, cancelHoming, cancelZoomHoming } =
+    useLivePose(
     true,
     project,
     playhead,
     speedPercent,
     velocities,
+    targetLock,
+    zoomVelocity,
     (axis) => {
       setVelocities((v) => {
         if (Math.abs(v[axis]) < 1e-6) return v;
@@ -158,6 +175,9 @@ export default function App() {
         next[axis] = 0;
         return next;
       });
+    },
+    () => {
+      setZoomVelocity(0);
     }
   );
 
@@ -297,7 +317,7 @@ export default function App() {
 
     }
 
-    setProject(next);
+    updateProject(next);
 
     setSelection(null);
 
@@ -373,7 +393,14 @@ export default function App() {
 
       <div className="workspace timeline-workspace">
 
-          {viewLayout.leftSidebar && (
+          <CollapsibleSidebar
+            side="left"
+            collapsed={!viewLayout.leftSidebar}
+            label="left sidebar"
+            onToggle={() =>
+              setViewLayout((layout) => ({ ...layout, leftSidebar: !layout.leftSidebar }))
+            }
+          >
           <div className="workspace-left">
 
             <PresetSidebar
@@ -417,7 +444,7 @@ export default function App() {
             />
 
           </div>
-          )}
+          </CollapsibleSidebar>
 
 
 
@@ -507,7 +534,9 @@ export default function App() {
 
                     onSnapToggle={setSnapEnabled}
 
-                    onProjectChange={setProject}
+                    onProjectChange={updateProject}
+
+                    onEnsureDuration={ensureDuration}
 
                     onSelect={setSelection}
 
@@ -528,16 +557,25 @@ export default function App() {
 
 
 
-          {viewLayout.inspector && (
+          <CollapsibleSidebar
+            side="right"
+            collapsed={!viewLayout.inspector}
+            label="right sidebar"
+            onToggle={() =>
+              setViewLayout((layout) => ({ ...layout, inspector: !layout.inspector }))
+            }
+          >
           <RightSidebar
             project={project}
             selection={selection}
             speedPercent={speedPercent}
             livePose={livePose}
             velocities={velocities}
-            liveRecording={liveRecording}
+            zoomVelocity={zoomVelocity}
             demoMode={DEMO_MODE}
-            onUpdateProject={setProject}
+            targetLock={targetLock}
+            onTargetLockChange={setTargetLock}
+            onUpdateProject={updateProject}
             onDeleteSelection={deleteSelection}
             onSpeedPercentChange={setSpeedPercent}
             onVelocityChange={(axis, v) => {
@@ -545,6 +583,7 @@ export default function App() {
               next[axis] = v;
               setVelocities(next);
             }}
+            onZoomVelocityChange={setZoomVelocity}
             onAxisStop={(axis) => {
               cancelHoming(axis);
               setVelocities((v) => {
@@ -552,6 +591,10 @@ export default function App() {
                 next[axis] = 0;
                 return next;
               });
+            }}
+            onZoomStop={() => {
+              cancelZoomHoming();
+              setZoomVelocity(0);
             }}
             onAxisHome={(axis) => {
               setVelocities((v) => {
@@ -561,13 +604,17 @@ export default function App() {
               });
               startHoming(axis);
             }}
-            onStopAll={() => {
-              cancelAllHoming();
-              setVelocities([0, 0, 0, 0]);
+            onZoomHome={() => {
+              setZoomVelocity(0);
+              startZoomHoming();
             }}
-            onToggleRecord={() => setLiveRecording((r) => !r)}
+            onHomeAll={() => {
+              setVelocities([0, 0, 0, 0]);
+              setZoomVelocity(0);
+              homeAll();
+            }}
           />
-          )}
+          </CollapsibleSidebar>
 
         </div>
 
@@ -595,7 +642,7 @@ export default function App() {
 
         </span>
 
-        <span>v0.2 demo · {project.duration}s timeline</span>
+        <span>v0.2 demo · {project.duration}s workspace</span>
 
       </footer>
 

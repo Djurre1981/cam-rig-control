@@ -55,13 +55,10 @@ function insertIndexForTime(clips: TimedClip[], time: number): number {
 
 function clampDurationToFitChain(
   clips: TimedClip[],
-  requestedDuration: number,
-  projectDuration: number
+  requestedDuration: number
 ): number | null {
-  const used = clips.reduce((sum, c) => sum + c.duration, 0);
-  const max = projectDuration - used;
-  if (max < MIN_CLIP_DURATION) return null;
-  return clampDuration(Math.min(requestedDuration, max));
+  if (requestedDuration < MIN_CLIP_DURATION) return null;
+  return clampDuration(requestedDuration);
 }
 
 /** Insert a new clip into the chain at drop time; returns packed clips or null. */
@@ -69,14 +66,13 @@ export function insertClipInChain(
   clips: TimedClip[],
   newClip: TimedClip,
   dropTime: number,
-  projectDuration: number,
   snapEnabled: boolean
 ): TimedClip[] | null {
   const packed = packClipStarts(clips.map((c) => ({ ...c })));
   const t = snapTime(Math.max(0, dropTime), snapEnabled);
   const idx = insertIndexForTime(packed, t);
 
-  const duration = clampDurationToFitChain(packed, newClip.duration, projectDuration);
+  const duration = clampDurationToFitChain(packed, newClip.duration);
   if (duration == null) return null;
 
   const inserted = { ...newClip, duration, start: 0 };
@@ -107,16 +103,13 @@ export function moveClipInChain<T extends TimedClip>(
 export function resizeClipInChain<T extends TimedClip>(
   clips: T[],
   clipId: string,
-  desiredDuration: number,
-  projectDuration: number
+  desiredDuration: number
 ): T[] {
   const sorted = sortedByStart(clips);
   const clip = sorted.find((c) => c.id === clipId);
   if (!clip) return clips;
 
-  const others = sorted.filter((c) => c.id !== clipId);
-  const maxDuration = projectDuration - others.reduce((s, c) => s + c.duration, 0);
-  clip.duration = clampDuration(Math.min(desiredDuration, maxDuration));
+  clip.duration = clampDuration(desiredDuration);
   return packClipStarts(sorted);
 }
 

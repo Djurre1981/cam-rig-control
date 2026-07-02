@@ -18,6 +18,8 @@ import {
   movePositionToRad,
   stepMotionToRad,
 } from "./motionLimits";
+import { clampPoseBoom } from "./boomGroundLimits";
+import { BOOM_REST_ANGLE } from "./rigConstants";
 import { ensureSpeedCurve, motionProgressAtTime, speedAtTime } from "./speedCurve";
 
 export type RigPose = {
@@ -30,8 +32,7 @@ export type RigPose = {
   zoom: number;
 };
 
-/** Rest pose: arm near-level (matches typical bench setup in DIW videos). */
-export const BOOM_REST_ANGLE = -0.06;
+export { BOOM_REST_ANGLE } from "./rigConstants";
 
 /** Pivot to camera-head distance (metres, approximate from 1" arm tubes). */
 export const BOOM_REACH = FRONT_REACH;
@@ -109,23 +110,27 @@ export function poseFromTimeline(
   t: number,
   speedPercent = 100
 ): RigPose {
-  return {
+  const pose: RigPose = {
     boom: BOOM_REST_ANGLE + axisPositionAtTime(project.tracks[0]?.clips ?? [], t, 0, speedPercent),
     swing: axisPositionAtTime(project.tracks[1]?.clips ?? [], t, 1, speedPercent),
     yaw: axisPositionAtTime(project.tracks[2]?.clips ?? [], t, 2, speedPercent),
     pitch: axisPositionAtTime(project.tracks[3]?.clips ?? [], t, 3, speedPercent),
     zoom: zoomAtTime(project, t),
   };
+  clampPoseBoom(pose);
+  return pose;
 }
 
 export function poseFromLive(velocities: number[], base: RigPose, speedPercent = 100): RigPose {
   const v = velocities.map((vel, i) => clampAxisVelocity(i, vel, speedPercent));
   const liveTick = 1 / 60;
-  return {
+  const pose: RigPose = {
     boom: base.boom + stepMotionToRad(0, v[0] * liveTick),
     swing: base.swing + stepMotionToRad(1, v[1] * liveTick),
     yaw: base.yaw + stepMotionToRad(2, v[2] * liveTick),
     pitch: base.pitch + stepMotionToRad(3, v[3] * liveTick),
     zoom: base.zoom,
   };
+  clampPoseBoom(pose);
+  return pose;
 }

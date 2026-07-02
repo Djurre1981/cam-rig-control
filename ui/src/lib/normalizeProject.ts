@@ -1,4 +1,5 @@
 import { defaultSpeedCurve } from "./speedCurve";
+import { ensureTimelineDuration } from "./timelineDuration";
 import { packClipStarts } from "./timelineTrackChain";
 import { MOTOR_TRACK_COLORS, type TimelineProject } from "../types";
 
@@ -21,7 +22,7 @@ export function normalizeProject(raw: TimelineProject): TimelineProject {
       t.clips.map((c) => ({ ...c, id: c.id ?? `legacy_${Math.random()}` }))
     ),
   }));
-  return p;
+  return ensureTimelineDuration(p);
 }
 
 export function projectSnapshot(project: TimelineProject): string {
