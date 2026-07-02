@@ -8,7 +8,8 @@
 import * as THREE from "three";
 import { BOOM_RANGE_DEG } from "./motionLimits";
 import { BOOM_REST_ANGLE } from "./rigKinematics";
-import { FRONT_REACH, PIVOT_Y, REAR_REACH } from "./rigGeometry";
+import { FRONT_REACH, PIVOT_Y, REAR_REACH, applyRigPose, buildRig } from "./rigGeometry";
+import { HOME_SUBJECT_POSITION } from "./rigCameraScene";
 
 export const FRAME_HW_RATIO = 0.5;
 /** Viewport width ÷ height (matches orthographic framing). */
@@ -17,16 +18,16 @@ export const PREVIEW_VIEW_ASPECT = 1 / FRAME_HW_RATIO;
 export const RIG_WIDTH_FILL = 0.92;
 /** Multiplier for apparent rig size in the preview (2 = twice as large). */
 export const PREVIEW_SCALE = 2;
-/** 3D preview canvas / scene background. */
-export const PREVIEW_BACKGROUND = 0xd4d8de;
-const FRAME_PAD = 1.02;
+/** 3D preview canvas / scene background (matches camera-view pane). */
+export const PREVIEW_BACKGROUND = 0x1a1c22;
+const FRAME_PAD = 1.06;
 
 /** Framing projection for static side-elevation export (`rig-side.html`). */
 export const VIEW_DIR = new THREE.Vector3(0, 0.08, -1).normalize();
 
 /** Default interactive preview orbit — front-right elevated ¾ view (user reference). */
-export const DEFAULT_VIEW_AZIMUTH = 0.58;
-export const DEFAULT_VIEW_ELEVATION = -0.38;
+export const DEFAULT_VIEW_AZIMUTH = 0.72;
+export const DEFAULT_VIEW_ELEVATION = -0.42;
 export const DEFAULT_VIEW_ZOOM = 1;
 export const DEFAULT_VIEW_PAN_X = 0;
 export const DEFAULT_VIEW_PAN_Y = 0;
@@ -156,14 +157,22 @@ function lookAtFromProjection(
 }
 
 function framingSize(projW: number, projH: number) {
-  const zoom = RIG_WIDTH_FILL * PREVIEW_SCALE;
-  let frameW = (projW / zoom) * FRAME_PAD;
-  let frameH = frameW * FRAME_HW_RATIO;
-  if ((projH / zoom) * FRAME_PAD > frameH) {
-    frameH = (projH / zoom) * FRAME_PAD;
-    frameW = frameH / FRAME_HW_RATIO;
+  const fitZoom = RIG_WIDTH_FILL;
+  const orthoZoom = RIG_WIDTH_FILL * PREVIEW_SCALE;
+
+  function sizeForZoom(zoom: number) {
+    let w = (projW / zoom) * FRAME_PAD;
+    let h = w * FRAME_HW_RATIO;
+    if ((projH / zoom) * FRAME_PAD > h) {
+      h = (projH / zoom) * FRAME_PAD;
+      w = h / FRAME_HW_RATIO;
+    }
+    return { w, h };
   }
-  return { frameW, frameH };
+
+  const fit = sizeForZoom(fitZoom);
+  const ortho = sizeForZoom(orthoZoom);
+  return { frameW: ortho.w, frameH: ortho.h, fitW: fit.w, fitH: fit.h };
 }
 
 export type RigFraming = {
@@ -173,16 +182,49 @@ export type RigFraming = {
   distance: number;
 };
 
-export function getRigFraming(aspect: number, viewDir: THREE.Vector3 = VIEW_DIR): RigFraming {
-  const proj = projectedExtents(motionEnvelopeBox(), FRAMING_ANCHOR, viewDir);
+let _restPoseMeshBox: THREE.Box3 | null = null;
+
+/** Axis-aligned bounds of the rig mesh at rest pose (interactive preview framing). */
+export function getRestPoseMeshBox(): THREE.Box3 {
+  if (!_restPoseMeshBox) {
+    const scene = new THREE.Scene();
+    const nodes = buildRig(scene);
+    applyRigPose(nodes, { boom: BOOM_REST_ANGLE, swing: 0, yaw: 0, pitch: 0, zoom: 1 });
+    _restPoseMeshBox = new THREE.Box3().setFromObject(nodes.root);
+  }
+  return _restPoseMeshBox;
+}
+
+let _interactivePreviewBounds: THREE.Box3 | null = null;
+
+/** Rig mesh + home reference subject — interactive orbit framing. */
+export function getInteractivePreviewBounds(): THREE.Box3 {
+  if (!_interactivePreviewBounds) {
+    const box = getRestPoseMeshBox().clone();
+    box.expandByPoint(HOME_SUBJECT_POSITION);
+    box.expandByPoint(HOME_SUBJECT_POSITION.clone().add(new THREE.Vector3(0, 0.34, 0)));
+    box.expandByPoint(HOME_SUBJECT_POSITION.clone().add(new THREE.Vector3(0.14, 0, 0.14)));
+    box.expandByPoint(HOME_SUBJECT_POSITION.clone().add(new THREE.Vector3(-0.14, 0, -0.14)));
+    box.min.y = Math.min(box.min.y, 0);
+    _interactivePreviewBounds = box;
+  }
+  return _interactivePreviewBounds;
+}
+
+export function getRigFraming(
+  aspect: number,
+  viewDir: THREE.Vector3 = VIEW_DIR,
+  bounds: THREE.Box3 = motionEnvelopeBox()
+): RigFraming {
+  const proj = projectedExtents(bounds, FRAMING_ANCHOR, viewDir);
   const target = lookAtFromProjection(FRAMING_ANCHOR, proj, viewDir);
-  const { frameW, frameH } = framingSize(proj.width, proj.height);
+  const { frameW, frameH, fitW, fitH } = framingSize(proj.width, proj.height);
 
   const halfFovY = (34 * Math.PI) / 360;
   const halfFovX = Math.atan(Math.tan(halfFovY) * aspect);
   const distance = Math.max(
-    frameW / (2 * Math.tan(halfFovX)),
-    frameH / (2 * Math.tan(halfFovY)),
+    fitW / (2 * Math.tan(halfFovX)),
+    fitH / (2 * Math.tan(halfFovY)),
     0.01
   );
 

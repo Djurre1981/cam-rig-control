@@ -16,6 +16,8 @@ import { RigPreview } from "./components/RigPreview";
 
 import { ViewMenu } from "./components/ViewMenu";
 import { CollapsibleSidebar } from "./components/CollapsibleSidebar";
+import { CollapsibleSection } from "./components/CollapsibleSection";
+import { AppFooter } from "./components/AppFooter";
 
 import { TimelineEditor } from "./components/TimelineEditor";
 
@@ -360,17 +362,11 @@ export default function App() {
       <header className="app-header">
 
         <div className="brand">
-
           <h1>Cam Rig Control</h1>
-
           <span className="project-name">
-
             {project.name}
-
-            {dirty && <span className="project-modified"> • unsaved</span>}
-
+            {dirty && <span className="project-modified"> · unsaved</span>}
           </span>
-
         </div>
 
         {DEMO_MODE && (
@@ -402,47 +398,38 @@ export default function App() {
             }
           >
           <div className="workspace-left">
+            <CollapsibleSection
+              title="Animations"
+              storageKey="left-animations"
+              defaultOpen
+              badge={`${animationList.length}`}
+            >
+              <PresetSidebar
+                compact
+                animations={animationList}
+                activeId={activeId}
+                dirty={dirty}
+                onSelect={requestSelectAnimation}
+                onSave={handleSave}
+                onSaveAs={handleSaveAs}
+                onNew={handleNew}
+                onRename={(id) => setDialog({ kind: "rename", targetId: id })}
+                onDuplicate={(id) => {
+                  const copyId = duplicateAnimation(id);
+                  if (copyId) loadAnimation(copyId);
+                }}
+                onDelete={(id) => setDialog({ kind: "delete", targetId: id })}
+              />
+            </CollapsibleSection>
 
-            <PresetSidebar
-
-              animations={animationList}
-
-              activeId={activeId}
-
-              dirty={dirty}
-
-              onSelect={requestSelectAnimation}
-
-              onSave={handleSave}
-
-              onSaveAs={handleSaveAs}
-
-              onNew={handleNew}
-
-              onRename={(id) => setDialog({ kind: "rename", targetId: id })}
-
-              onDuplicate={(id) => {
-
-                const copyId = duplicateAnimation(id);
-
-                if (copyId) loadAnimation(copyId);
-
-              }}
-
-              onDelete={(id) => setDialog({ kind: "delete", targetId: id })}
-
-            />
-
-            <ClipPalette
-
-              items={CLIP_PALETTE}
-
-              selectedId={activePaletteItem?.id ?? null}
-
-              onSelect={setActivePaletteItem}
-
-            />
-
+            <CollapsibleSection title="Motions" storageKey="left-motions" defaultOpen badge="5">
+              <ClipPalette
+                compact
+                items={CLIP_PALETTE}
+                selectedId={activePaletteItem?.id ?? null}
+                onSelect={setActivePaletteItem}
+              />
+            </CollapsibleSection>
           </div>
           </CollapsibleSidebar>
 
@@ -620,31 +607,7 @@ export default function App() {
 
 
 
-      <footer className="app-footer">
-
-        <span>
-
-          Design refs:{" "}
-
-          <a href="https://github.com/EvanBottango/Bottango" target="_blank" rel="noreferrer">
-
-            Bottango
-
-          </a>
-
-          ,{" "}
-
-          <a href="https://www.dragonframe.com/dragonframe-software/" target="_blank" rel="noreferrer">
-
-            Dragonframe Arc
-
-          </a>
-
-        </span>
-
-        <span>v0.2 demo · {project.duration}s workspace</span>
-
-      </footer>
+      <AppFooter duration={project.duration} />
 
 
 

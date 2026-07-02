@@ -7,6 +7,7 @@ import {
   CAMERA_VIEW_ASPECT,
   fovForZoom,
   rigCameraToViewQuaternion,
+  SCENE_VIEW_BG,
 } from "../lib/rigCameraScene";
 import { cameraPitchRadians, cameraRollRadians } from "../lib/cameraAttitude";
 import { VirtualHorizon, type VirtualHorizonHandle } from "./VirtualHorizon";
@@ -21,8 +22,6 @@ type Props = {
   docked?: boolean;
   showHorizon?: boolean;
 };
-const VIEW_BG = 0x1a1c22;
-
 export function CameraViewPreview({
   project,
   playhead,
@@ -84,7 +83,7 @@ export function CameraViewPreview({
     if (!container) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(VIEW_BG);
+    scene.background = new THREE.Color(SCENE_VIEW_BG);
     buildCameraViewEnvironment(scene);
 
     const rigScene = new THREE.Scene();

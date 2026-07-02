@@ -12,6 +12,7 @@ type Props = {
   onRename: (id: string) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
+  compact?: boolean;
 };
 
 export function PresetSidebar({
@@ -25,6 +26,7 @@ export function PresetSidebar({
   onRename,
   onDuplicate,
   onDelete,
+  compact,
 }: Props) {
   const [menuId, setMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -43,10 +45,32 @@ export function PresetSidebar({
   const active = animations.find((a) => a.id === activeId);
 
   return (
-    <aside className="preset-sidebar">
-      <div className="preset-sidebar-header">
-        <h3>Animations</h3>
-        <div className="preset-toolbar">
+    <div className={["preset-sidebar", compact ? "compact" : ""].filter(Boolean).join(" ")}>
+      {!compact && (
+        <div className="preset-sidebar-header">
+          <h3>Animations</h3>
+          <div className="preset-toolbar">
+            <button type="button" className="preset-tool" onClick={onNew} title="New animation">
+              New
+            </button>
+            <button
+              type="button"
+              className="preset-tool"
+              onClick={onSave}
+              disabled={!dirty}
+              title="Save animation"
+            >
+              Save
+            </button>
+            <button type="button" className="preset-tool" onClick={onSaveAs} title="Save as new animation">
+              Save as
+            </button>
+          </div>
+        </div>
+      )}
+
+      {compact && (
+        <div className="preset-toolbar preset-toolbar-inline">
           <button type="button" className="preset-tool" onClick={onNew} title="New animation">
             New
           </button>
@@ -59,14 +83,14 @@ export function PresetSidebar({
           >
             Save
           </button>
-          <button type="button" className="preset-tool" onClick={onSaveAs} title="Save as new animation">
-            Save as
+          <button type="button" className="preset-tool" onClick={onSaveAs} title="Save as">
+            As…
           </button>
         </div>
-      </div>
+      )}
 
       {dirty && active && (
-        <p className="preset-dirty-hint">Unsaved changes to {active.name}</p>
+        <p className="preset-dirty-hint">Unsaved · {active.name}</p>
       )}
 
       <ul className="preset-list">
@@ -147,7 +171,9 @@ export function PresetSidebar({
         })}
       </ul>
 
-      <p className="preset-note">Animations are saved in this browser. Use Save before switching if you have edits.</p>
-    </aside>
+      {!compact && (
+        <p className="preset-note">Animations are saved in this browser. Use Save before switching if you have edits.</p>
+      )}
+    </div>
   );
 }

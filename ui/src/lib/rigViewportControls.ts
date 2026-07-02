@@ -10,6 +10,7 @@ import {
   DEFAULT_VIEW_PAN_X,
   DEFAULT_VIEW_PAN_Y,
   DEFAULT_VIEW_ZOOM,
+  getRestPoseMeshBox,
   getRigFraming,
   orbitOffsetUnit,
 } from "./rigFraming";
@@ -58,7 +59,7 @@ export function applyViewport(
 ) {
   orbitOffsetUnit(state.azimuth, state.elevation, _offset);
   const viewDir = _offset.clone().negate().normalize();
-  const framing = getRigFraming(aspect, viewDir);
+  const framing = getRigFraming(aspect, viewDir, getRestPoseMeshBox());
   const baseTarget = framing.target;
 
   const distance = (useOrtho ? 4 : framing.distance) / state.zoom;
@@ -96,7 +97,9 @@ export function applyViewport(
     cam.bottom = -halfH;
     cam.updateProjectionMatrix();
   } else {
-    (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+    const cam = camera as THREE.PerspectiveCamera;
+    cam.aspect = aspect;
+    cam.updateProjectionMatrix();
   }
 }
 
@@ -180,8 +183,6 @@ export function createViewportControls(
   canvas.addEventListener("pointercancel", onPointerUp);
   canvas.addEventListener("wheel", onWheel, { passive: false });
   canvas.addEventListener("contextmenu", onContextMenu);
-
-  applyViewport(getCamera(), getAspect(), useOrtho, state);
 
   return {
     state,

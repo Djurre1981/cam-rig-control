@@ -9,6 +9,28 @@ import { BOOM_REST_ANGLE, type RigPose } from "./rigKinematics";
 /** Landscape frame aspect (16∶9). */
 export const CAMERA_VIEW_ASPECT = 16 / 9;
 
+/** Shared dark scene background for 3D and camera-view previews. */
+export const SCENE_VIEW_BG = 0x1a1c22;
+
+/** Ground plane + grid used in both preview panes. */
+export function buildGroundEnvironment(): THREE.Group {
+  const env = new THREE.Group();
+  env.name = "ground-env";
+
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(6, 6),
+    new THREE.MeshStandardMaterial({ color: 0xb8bcc4, metalness: 0.05, roughness: 0.92 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  env.add(floor);
+
+  const grid = new THREE.GridHelper(6, 24, 0x8a919c, 0x9aa0a8);
+  grid.position.y = 0.001;
+  env.add(grid);
+
+  return env;
+}
+
 const HOME_POSE: RigPose = {
   boom: BOOM_REST_ANGLE,
   swing: 0,
@@ -91,24 +113,18 @@ export function buildReferenceSubject(): THREE.Group {
   return group;
 }
 
-export function buildCameraViewEnvironment(scene: THREE.Scene): THREE.Group {
-  const env = new THREE.Group();
-  env.name = "camera-view-env";
-
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(6, 6),
-    new THREE.MeshStandardMaterial({ color: 0xb8bcc4, metalness: 0.05, roughness: 0.92 })
-  );
-  floor.rotation.x = -Math.PI / 2;
-  env.add(floor);
-
-  const grid = new THREE.GridHelper(6, 24, 0x8a919c, 0x9aa0a8);
-  grid.position.y = 0.001;
-  env.add(grid);
-
+/** Ground + home reference subject — shared by 3D and camera-view previews. */
+export function buildPreviewEnvironment(): THREE.Group {
+  const env = buildGroundEnvironment();
   const subject = buildReferenceSubject();
   subject.position.copy(HOME_SUBJECT_POSITION);
   env.add(subject);
+  return env;
+}
+
+export function buildCameraViewEnvironment(scene: THREE.Scene): THREE.Group {
+  const env = buildPreviewEnvironment();
+  env.name = "camera-view-env";
 
   scene.add(env);
   return env;
