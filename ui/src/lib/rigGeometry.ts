@@ -9,6 +9,8 @@
  * Yaw:  vertical axis at boom/head joint — full 360° = horizontal panorama in footage.
  * Pitch: horizontal axis through lens (along Z) — full 360° = straight loop in footage.
  *
+ * Head mount ref: landscape camera in hanging U-cradle below yaw motor (DIW stills).
+ *
  * Solid colored rings = UI rotation axes (track colors).
  * White dotted segments + caps = physical revolution axes (per video still).
  */
@@ -58,6 +60,12 @@ function tubeAlongX(radius: number, length: number, color: number = COL.tube): T
   const m = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 10), mat(color, 0.45, 0.42));
   m.rotation.z = Math.PI / 2;
   m.position.x = length / 2;
+  return m;
+}
+
+function tubeAlongZ(radius: number, length: number, color: number = COL.tube): THREE.Mesh {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 10), mat(color, 0.45, 0.42));
+  m.rotation.x = Math.PI / 2;
   return m;
 }
 
@@ -162,53 +170,83 @@ export function buildRig(scene: THREE.Scene): RigNodes {
   midMotor.position.set(0.08, 0.03, 0);
   boomPivot.add(midMotor);
 
-  // Yaw — vertical axis at boom/head mount; frame + camera platform rotate together (panorama).
+  // Yaw — vertical axis at boom end; motor on boom line, U-cradle hangs below (DIW reference).
   const yawHead = new THREE.Group();
   yawHead.position.set(FRONT_REACH, 0, 0);
   boomPivot.add(yawHead);
 
-  const topMount = block(0.13, 0.07, 0.12);
-  topMount.position.set(0, 0.08, 0);
-  yawHead.add(topMount);
+  const boomEndTruss = block(0.09, 0.055, 0.11, COL.printDark);
+  boomEndTruss.position.set(-0.055, 0.01, 0);
+  yawHead.add(boomEndTruss);
 
-  const yawGear = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.058, 0.058, 0.022, 18),
+  const yawPlatform = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.062, 0.068, 0.022, 20),
     mat(COL.print)
   );
-  yawGear.position.y = 0.12;
-  yawHead.add(yawGear);
+  yawPlatform.position.y = -0.015;
+  yawHead.add(yawPlatform);
 
-  // Yaw ring: horizontal, centered above head on vertical axis (user reference).
-  uiAxisRing(yawHead, COL.yaw, 0.085, "y", new THREE.Vector3(0, 0.21, 0));
-  actualAxis(yawHead, new THREE.Vector3(0, -0.16, 0), new THREE.Vector3(0, 0.16, 0));
+  const yawMotor = block(0.085, 0.075, 0.085, COL.pole);
+  yawMotor.position.y = 0.03;
+  yawHead.add(yawMotor);
 
-  const frameH = 0.2;
-  const frameCenterY = -0.05;
-  for (const z of [-0.065, 0.065] as const) {
-    const post = block(0.038, frameH, 0.038, COL.printDark);
-    post.position.set(0.02, frameCenterY, z);
-    yawHead.add(post);
+  // Yaw ring: horizontal, above motor on vertical axis.
+  uiAxisRing(yawHead, COL.yaw, 0.085, "y", new THREE.Vector3(0, 0.14, 0));
+  actualAxis(yawHead, new THREE.Vector3(0, 0.18, 0), new THREE.Vector3(0, -0.3, 0));
+
+  // Triangular drop plate — yaw axis to cradle top bar.
+  const dropPlate = block(0.11, 0.007, 0.13, 0xb8bcc4);
+  dropPlate.position.set(0, -0.055, 0);
+  yawHead.add(dropPlate);
+  for (const sx of [-1, 1] as const) {
+    const wing = block(0.05, 0.006, 0.06, 0xb8bcc4);
+    wing.position.set(sx * 0.03, -0.072, sx * 0.028);
+    wing.rotation.z = sx * 0.42;
+    yawHead.add(wing);
   }
 
-  const frameTop = block(0.14, 0.035, 0.14, COL.print);
-  frameTop.position.set(0.02, frameCenterY + frameH / 2, 0);
-  yawHead.add(frameTop);
+  const frameW = 0.13;
+  const frameH = 0.15;
+  const cradleTopY = -0.095;
 
-  const frameBottom = block(0.12, 0.03, 0.12, COL.printDark);
-  frameBottom.position.set(0.02, frameCenterY - frameH / 2, 0);
-  yawHead.add(frameBottom);
+  const cradle = new THREE.Group();
+  cradle.position.set(0, cradleTopY, 0);
+  yawHead.add(cradle);
 
-  // Pitch — horizontal axis through lens (along Z); camera tilts/loops in the vertical plane.
+  const frameTop = tubeAlongZ(tubeR, frameW, COL.tube);
+  cradle.add(frameTop);
+
+  for (const z of [-frameW / 2, frameW / 2] as const) {
+    const joint = block(0.042, 0.042, 0.042, COL.print);
+    joint.position.set(0, 0, z);
+    cradle.add(joint);
+
+    const post = block(0.03, frameH, 0.03, COL.tube);
+    post.position.set(0, -frameH / 2, z);
+    cradle.add(post);
+  }
+
+  const frameBottom = tubeAlongZ(tubeR, frameW, COL.tube);
+  frameBottom.position.y = -frameH;
+  cradle.add(frameBottom);
+
+  for (const z of [-frameW / 2, frameW / 2] as const) {
+    const bottomJoint = block(0.04, 0.038, 0.04, COL.print);
+    bottomJoint.position.set(0, -frameH, z);
+    cradle.add(bottomJoint);
+  }
+
+  // Pitch — horizontal axis through lens (along Z); camera on bottom bar tilts in vertical plane.
   const pitchHead = new THREE.Group();
-  pitchHead.position.set(0.05, frameCenterY, 0);
-  yawHead.add(pitchHead);
+  pitchHead.position.set(0, -frameH, 0);
+  cradle.add(pitchHead);
 
   const pitchGear = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.042, 0.042, 0.018, 16),
+    new THREE.CylinderGeometry(0.04, 0.04, 0.016, 16),
     mat(COL.print)
   );
   pitchGear.rotation.x = Math.PI / 2;
-  pitchGear.position.set(-0.03, 0, 0.075);
+  pitchGear.position.set(-0.015, -0.02, frameW / 2 + 0.012);
   pitchHead.add(pitchGear);
 
   // Pitch ring: vertical, beside head joint (user reference).
@@ -216,17 +254,34 @@ export function buildRig(scene: THREE.Scene): RigNodes {
   actualAxis(pitchHead, new THREE.Vector3(0, 0, -0.11), new THREE.Vector3(0, 0, 0.11));
 
   const camera = new THREE.Group();
+  camera.position.y = -0.02;
   pitchHead.add(camera);
 
-  const body = block(0.11, 0.11, 0.05, COL.cam);
+  // Landscape mount (Lumix-style): wide along Z, lens along +X, side profile in X×Y.
+  const bodyW = 0.05;
+  const bodyH = 0.086;
+  const bodyD = 0.11;
+  const body = block(bodyW, bodyH, bodyD, COL.cam);
   camera.add(body);
 
+  const baseplate = block(bodyW + 0.024, 0.012, bodyD + 0.016, COL.print);
+  baseplate.position.y = -bodyH / 2 - 0.006;
+  camera.add(baseplate);
+
+  const ffRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.034, 0.006, 8, 24),
+    mat(COL.print, 0.35, 0.5)
+  );
+  ffRing.rotation.y = Math.PI / 2;
+  ffRing.position.x = bodyW / 2 + 0.008;
+  camera.add(ffRing);
+
   const lensMark = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.034, 0.034, 0.012, 24),
+    new THREE.CylinderGeometry(0.03, 0.03, 0.014, 24),
     mat(COL.lensMark, 0.15, 0.45)
   );
   lensMark.rotation.z = Math.PI / 2;
-  lensMark.position.x = 0.062;
+  lensMark.position.x = bodyW / 2 + 0.022;
   camera.add(lensMark);
 
   return { root, swing, boomPivot, yawHead, pitchHead, camera, lensMark };

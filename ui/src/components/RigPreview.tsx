@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
-import { BOOM_REST_ANGLE, poseFromLive, poseFromTimeline } from "../lib/rigKinematics";
+import { BOOM_REST_ANGLE, poseFromLive, poseFromTimeline, type RigPose } from "../lib/rigKinematics";
 import { applyRigPose, buildRig } from "../lib/rigGeometry";
 import { PREVIEW_VIEW_ASPECT, PREVIEW_BACKGROUND } from "../lib/rigFraming";
 import { createRigAxisCompass } from "../lib/rigAxisCompass";
@@ -11,11 +11,12 @@ type Props = {
   playhead: number;
   speedPercent?: number;
   liveVelocities?: number[];
+  livePose?: RigPose;
   compact?: boolean;
   docked?: boolean;
 };
 
-export function RigPreview({ project, playhead, speedPercent = 100, liveVelocities, compact, docked }: Props) {
+export function RigPreview({ project, playhead, speedPercent = 100, liveVelocities, livePose, compact, docked }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<ReturnType<typeof buildRig> | null>(null);
@@ -156,11 +157,13 @@ export function RigPreview({ project, playhead, speedPercent = 100, liveVelociti
     const nodes = nodesRef.current;
     if (!nodes) return;
     const base = poseFromTimeline(project, playhead, speedPercent);
-    const pose = liveVelocities
-      ? poseFromLive(liveVelocities, base, speedPercent)
-      : base;
+    const pose = livePose
+      ? livePose
+      : liveVelocities
+        ? poseFromLive(liveVelocities, base, speedPercent)
+        : base;
     applyRigPose(nodes, pose);
-  }, [project, playhead, liveVelocities, speedPercent]);
+  }, [project, playhead, liveVelocities, livePose, speedPercent]);
 
   return (
     <div

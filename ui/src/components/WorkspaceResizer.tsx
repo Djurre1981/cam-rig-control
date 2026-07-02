@@ -5,11 +5,13 @@ const MAX_PREVIEW_RATIO = 0.72;
 const STORAGE_KEY = "camrig-preview-ratio";
 
 type Props = {
-  children: [ReactNode, ReactNode];
+  top?: ReactNode;
+  bottom: ReactNode;
 };
 
-export function WorkspaceResizer({ children }: Props) {
+export function WorkspaceResizer({ top, bottom }: Props) {
   const [ratio, setRatio] = useState(() => {
+    if (typeof localStorage === "undefined") return 0.38;
     const saved = localStorage.getItem(STORAGE_KEY);
     const n = saved ? Number(saved) : 0.38;
     return Number.isFinite(n) ? Math.max(0.2, Math.min(MAX_PREVIEW_RATIO, n)) : 0.38;
@@ -48,24 +50,31 @@ export function WorkspaceResizer({ children }: Props) {
   }, [onPointerMove, onPointerUp]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, String(ratio));
-  }, [ratio]);
+    if (top) localStorage.setItem(STORAGE_KEY, String(ratio));
+  }, [ratio, top]);
 
-  const [top, bottom] = children;
+  const showTop = top != null;
 
   return (
     <div className="workspace-resizer" ref={containerRef}>
-      <div className="workspace-resizer-top" style={{ flex: `${ratio} 1 0` }}>
-        {top}
-      </div>
+      {showTop && (
+        <>
+          <div className="workspace-resizer-top" style={{ flex: `${ratio} 1 0` }}>
+            {top}
+          </div>
+          <div
+            className="workspace-resizer-handle"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize preview and timeline"
+            onPointerDown={onPointerDown}
+          />
+        </>
+      )}
       <div
-        className="workspace-resizer-handle"
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="Resize preview and timeline"
-        onPointerDown={onPointerDown}
-      />
-      <div className="workspace-resizer-bottom" style={{ flex: `${1 - ratio} 1 0` }}>
+        className="workspace-resizer-bottom"
+        style={{ flex: showTop ? `${1 - ratio} 1 0` : "1 1 0" }}
+      >
         {bottom}
       </div>
     </div>

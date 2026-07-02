@@ -59,6 +59,7 @@ type Props = {
   onProjectChange: (p: TimelineProject) => void;
   onSelect: (s: ClipSelection) => void;
   onSeek: (t: number) => void;
+  hiddenTrackIds?: ReadonlySet<string>;
 };
 
 type DragState =
@@ -97,6 +98,7 @@ export function TimelineEditor({
   onProjectChange,
   onSelect,
   onSeek,
+  hiddenTrackIds,
 }: Props) {
   const [pixelsPerSecond, setPixelsPerSecond] = useState(DEFAULT_PIXELS_PER_SECOND);
   const [drag, setDrag] = useState<DragState>(null);
@@ -681,6 +683,16 @@ export function TimelineEditor({
     );
   };
 
+  const visibleMotorTracks = useMemo(
+    () => project.tracks.filter((t) => !hiddenTrackIds?.has(t.id)),
+    [project.tracks, hiddenTrackIds]
+  );
+  const visibleCameraTracks = useMemo(
+    () => project.camera_tracks.filter((t) => !hiddenTrackIds?.has(t.id)),
+    [project.camera_tracks, hiddenTrackIds]
+  );
+  const hasVisibleTracks = visibleMotorTracks.length > 0 || visibleCameraTracks.length > 0;
+
   return (
     <div className="timeline-editor" ref={lanesRef}>
       <div className="timeline-toolbar">
@@ -744,32 +756,36 @@ export function TimelineEditor({
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleCanvasDrop}
         >
-          <div className="ruler-row">
-            <div className="track-label head">Time</div>
-            <div
-              className="ruler"
-              style={{ width }}
-              onPointerDown={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                onSeek(timeFromX(e.clientX, rect.left));
-                setDrag({ mode: "scrub" });
-              }}
-            >
-              {rulerTicks.map(({ t, major }) => (
-                <span
-                  key={t}
-                  className={`ruler-tick ${major ? "major" : "minor"}`}
-                  style={{ left: t * pps }}
-                >
-                  {major ? formatRulerLabel(t) : ""}
-                </span>
-              ))}
-              <div className="playhead-head" style={{ left: playhead * pps }} />
+          {hasVisibleTracks && (
+            <div className="ruler-row">
+              <div className="track-label head">Time</div>
+              <div
+                className="ruler"
+                style={{ width }}
+                onPointerDown={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  onSeek(timeFromX(e.clientX, rect.left));
+                  setDrag({ mode: "scrub" });
+                }}
+              >
+                {rulerTicks.map(({ t, major }) => (
+                  <span
+                    key={t}
+                    className={`ruler-tick ${major ? "major" : "minor"}`}
+                    style={{ left: t * pps }}
+                  >
+                    {major ? formatRulerLabel(t) : ""}
+                  </span>
+                ))}
+                <div className="playhead-head" style={{ left: playhead * pps }} />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="track-section-label">Motion axes</div>
-          {project.tracks.map((track) => {
+          {visibleMotorTracks.length > 0 && (
+            <div className="track-section-label">Motion axes</div>
+          )}
+          {visibleMotorTracks.map((track) => {
             const rowH = motorRowHeight(track);
             return (
               <div
@@ -808,8 +824,10 @@ export function TimelineEditor({
             );
           })}
 
-          <div className="track-section-label camera">Camera · Sony ZV-1 II</div>
-          {project.camera_tracks.map((track) => {
+          {visibleCameraTracks.length > 0 && (
+            <div className="track-section-label camera">Camera · Sony ZV-1 II</div>
+          )}
+          {visibleCameraTracks.map((track) => {
             const rowH = cameraRowHeight(track);
             return (
               <div
@@ -847,19 +865,21 @@ export function TimelineEditor({
             );
           })}
 
-          <div
-            className="playhead-line"
-            style={{ left: TRACK_LABEL_WIDTH + playhead * pps }}
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              const scroll = scrollRef.current;
-              const ruler = scroll?.querySelector(".ruler") as HTMLElement | null;
-              if (!ruler) return;
-              const rect = ruler.getBoundingClientRect();
-              onSeek(timeFromX(e.clientX, rect.left));
-              setDrag({ mode: "scrub" });
-            }}
-          />
+          {hasVisibleTracks && (
+            <div
+              className="playhead-line"
+              style={{ left: TRACK_LABEL_WIDTH + playhead * pps }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                const scroll = scrollRef.current;
+                const ruler = scroll?.querySelector(".ruler") as HTMLElement | null;
+                if (!ruler) return;
+                const rect = ruler.getBoundingClientRect();
+                onSeek(timeFromX(e.clientX, rect.left));
+                setDrag({ mode: "scrub" });
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

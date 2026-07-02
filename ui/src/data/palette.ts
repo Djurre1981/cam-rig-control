@@ -2,31 +2,13 @@ import type { PaletteItem } from "../types";
 
 export const CLIP_PALETTE: PaletteItem[] = [
   {
-    id: "jog",
-    label: "Jog",
-    description: "Constant velocity while clip plays",
-    clipType: "JogClip",
-    target: "motor",
-    color: "#5a6a8a",
-    defaults: { duration: 3, velocity: 100, label: "Jog" },
-  },
-  {
-    id: "move",
-    label: "Move",
+    id: "movement",
+    label: "Movement",
     description: "Smooth position A → B",
     clipType: "MoveClip",
     target: "motor",
     color: "#6a5a9a",
-    defaults: { duration: 4, from_pos: 0, to_pos: 1200, label: "Move" },
-  },
-  {
-    id: "recorded",
-    label: "Recorded",
-    description: "Playback captured live motion",
-    clipType: "RecordedClip",
-    target: "motor",
-    color: "#9a5a7a",
-    defaults: { duration: 5, label: "Recorded" },
+    defaults: { duration: 4, from_pos: 0, to_pos: 1200, label: "Movement" },
   },
   {
     id: "rec_start",

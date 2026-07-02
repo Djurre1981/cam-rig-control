@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ClipSelection, TimelineProject } from "../types";
 import {
   axisLimitLabel,
@@ -15,7 +16,21 @@ type Props = {
   speedPercent: number;
   onUpdateProject: (p: TimelineProject) => void;
   onDeleteSelection: () => void;
+  embedded?: boolean;
 };
+
+function InspectorShell({
+  embedded,
+  children,
+}: {
+  embedded?: boolean;
+  children: ReactNode;
+}) {
+  if (embedded) {
+    return <div className="inspector inspector-embedded">{children}</div>;
+  }
+  return <aside className="inspector">{children}</aside>;
+}
 
 export function Inspector({
   project,
@@ -23,10 +38,11 @@ export function Inspector({
   speedPercent,
   onUpdateProject,
   onDeleteSelection,
+  embedded,
 }: Props) {
   if (!selection) {
     return (
-      <aside className="inspector">
+      <InspectorShell embedded={embedded}>
         <h3>Inspector</h3>
         <p className="inspector-empty">Select a clip to edit its properties.</p>
         <div className="inspector-meta">
@@ -48,7 +64,7 @@ export function Inspector({
             ))}
           </ul>
         </div>
-      </aside>
+      </InspectorShell>
     );
   }
 
@@ -66,7 +82,7 @@ export function Inspector({
     };
 
     return (
-      <aside className="inspector">
+      <InspectorShell embedded={embedded}>
         <h3>Inspector</h3>
         <p className="inspector-track" style={{ color: track.color }}>
           {track.label} · {clip.type.replace("Clip", "")}
@@ -156,7 +172,7 @@ export function Inspector({
         <button type="button" className="btn-danger" onClick={onDeleteSelection}>
           Delete clip
         </button>
-      </aside>
+      </InspectorShell>
     );
   }
 
@@ -173,7 +189,7 @@ export function Inspector({
   };
 
   return (
-    <aside className="inspector">
+    <InspectorShell embedded={embedded}>
       <h3>Inspector</h3>
       <p className="inspector-track" style={{ color: track.color }}>
         {track.label} · {clip.type.replace("Clip", "")}
@@ -235,6 +251,6 @@ export function Inspector({
       <button type="button" className="btn-danger" onClick={onDeleteSelection}>
         Delete clip
       </button>
-    </aside>
+    </InspectorShell>
   );
 }

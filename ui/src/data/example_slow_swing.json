@@ -18,10 +18,11 @@
       "clips": [
         {
           "id": "c_sw1",
-          "type": "JogClip",
+          "type": "MoveClip",
           "start": 1,
           "duration": 6,
-          "velocity": 120,
+          "from_pos": 0,
+          "to_pos": 1800,
           "label": "Swing"
         }
       ]
@@ -41,10 +42,11 @@
       "clips": [
         {
           "id": "c_pi1",
-          "type": "JogClip",
+          "type": "MoveClip",
           "start": 2,
           "duration": 4,
-          "velocity": -80,
+          "from_pos": 0,
+          "to_pos": -320,
           "label": "Tilt"
         }
       ]

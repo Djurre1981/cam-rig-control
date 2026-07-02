@@ -4,7 +4,15 @@
  */
 
 import * as THREE from "three";
-import { getRigFraming, VIEW_DIR } from "./rigFraming";
+import {
+  DEFAULT_VIEW_AZIMUTH,
+  DEFAULT_VIEW_ELEVATION,
+  DEFAULT_VIEW_PAN_X,
+  DEFAULT_VIEW_PAN_Y,
+  DEFAULT_VIEW_ZOOM,
+  getRigFraming,
+  orbitOffsetUnit,
+} from "./rigFraming";
 
 export type ViewportState = {
   azimuth: number;
@@ -29,21 +37,17 @@ const _right = new THREE.Vector3();
 const _up = new THREE.Vector3();
 
 function defaultState(): ViewportState {
-  const offset = VIEW_DIR.clone().negate();
-  const spherical = new THREE.Spherical().setFromVector3(offset);
   return {
-    azimuth: spherical.theta,
-    elevation: Math.max(ELEV_MIN, Math.min(ELEV_MAX, spherical.phi - Math.PI / 2)),
-    zoom: 1,
-    panX: 0,
-    panY: 0,
+    azimuth: DEFAULT_VIEW_AZIMUTH,
+    elevation: Math.max(ELEV_MIN, Math.min(ELEV_MAX, DEFAULT_VIEW_ELEVATION)),
+    zoom: DEFAULT_VIEW_ZOOM,
+    panX: DEFAULT_VIEW_PAN_X,
+    panY: DEFAULT_VIEW_PAN_Y,
   };
 }
 
 function sphericalOffset(azimuth: number, elevation: number, distance: number, out: THREE.Vector3) {
-  const phi = elevation + Math.PI / 2;
-  out.setFromSphericalCoords(distance, phi, azimuth);
-  return out;
+  return orbitOffsetUnit(azimuth, elevation, out).multiplyScalar(distance);
 }
 
 export function applyViewport(
@@ -52,7 +56,9 @@ export function applyViewport(
   useOrtho: boolean,
   state: ViewportState
 ) {
-  const framing = getRigFraming(aspect);
+  orbitOffsetUnit(state.azimuth, state.elevation, _offset);
+  const viewDir = _offset.clone().negate().normalize();
+  const framing = getRigFraming(aspect, viewDir);
   const baseTarget = framing.target;
 
   const distance = (useOrtho ? 4 : framing.distance) / state.zoom;

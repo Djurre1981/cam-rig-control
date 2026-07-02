@@ -21,8 +21,28 @@ export const PREVIEW_SCALE = 2;
 export const PREVIEW_BACKGROUND = 0xd4d8de;
 const FRAME_PAD = 1.02;
 
-/** View from +Z toward rig — back on left, camera on right. */
+/** Framing projection for static side-elevation export (`rig-side.html`). */
 export const VIEW_DIR = new THREE.Vector3(0, 0.08, -1).normalize();
+
+/** Default interactive preview orbit — front-right elevated ¾ view (user reference). */
+export const DEFAULT_VIEW_AZIMUTH = 0.58;
+export const DEFAULT_VIEW_ELEVATION = -0.38;
+export const DEFAULT_VIEW_ZOOM = 1;
+export const DEFAULT_VIEW_PAN_X = 0;
+export const DEFAULT_VIEW_PAN_Y = 0;
+
+const _orbitUnit = new THREE.Vector3();
+
+/** Unit offset from target → camera for an orbit pose. */
+export function orbitOffsetUnit(azimuth: number, elevation: number, out = _orbitUnit): THREE.Vector3 {
+  const phi = elevation + Math.PI / 2;
+  return out.setFromSphericalCoords(1, phi, azimuth);
+}
+
+/** View direction (target → camera is opposite); used for view-aligned framing. */
+export function viewDirFromOrbit(azimuth: number, elevation: number): THREE.Vector3 {
+  return orbitOffsetUnit(azimuth, elevation, new THREE.Vector3()).negate();
+}
 
 const CAMERA_EXTENT = 0.14;
 const BOOM_HALF = ((BOOM_RANGE_DEG / 2) * Math.PI) / 180;
@@ -47,7 +67,8 @@ function motionEnvelopeBox(): THREE.Box3 {
     const front = tipAtBoomAngle(boom, FRONT_REACH + CAMERA_EXTENT);
     box.expandByPoint(rear);
     box.expandByPoint(front);
-    box.expandByPoint(new THREE.Vector3(front.x, front.y + 0.12, 0));
+    box.expandByPoint(new THREE.Vector3(front.x, front.y + 0.14, 0));
+    box.expandByPoint(new THREE.Vector3(front.x, front.y - 0.28, 0));
     box.expandByPoint(new THREE.Vector3(rear.x, rear.y - 0.08, 0));
   }
 
@@ -68,10 +89,15 @@ const _rel = new THREE.Vector3();
 const _right = new THREE.Vector3();
 const _up = new THREE.Vector3();
 
-function viewBasis() {
+function viewBasis(viewDir: THREE.Vector3) {
   const worldUp = new THREE.Vector3(0, 1, 0);
-  _right.crossVectors(VIEW_DIR, worldUp).normalize();
-  _up.crossVectors(_right, VIEW_DIR).normalize();
+  _right.crossVectors(viewDir, worldUp);
+  if (_right.lengthSq() < 1e-8) {
+    _right.set(1, 0, 0);
+  } else {
+    _right.normalize();
+  }
+  _up.crossVectors(_right, viewDir).normalize();
 }
 
 function boxCorners(box: THREE.Box3, out: THREE.Vector3[]) {
@@ -86,8 +112,12 @@ function boxCorners(box: THREE.Box3, out: THREE.Vector3[]) {
   }
 }
 
-export function projectedExtents(box: THREE.Box3, origin: THREE.Vector3) {
-  viewBasis();
+export function projectedExtents(
+  box: THREE.Box3,
+  origin: THREE.Vector3,
+  viewDir: THREE.Vector3 = VIEW_DIR
+) {
+  viewBasis(viewDir);
   boxCorners(box, _corners);
 
   let minR = Infinity;
@@ -113,8 +143,12 @@ export function projectedExtents(box: THREE.Box3, origin: THREE.Vector3) {
   };
 }
 
-function lookAtFromProjection(anchor: THREE.Vector3, proj: ReturnType<typeof projectedExtents>) {
-  viewBasis();
+function lookAtFromProjection(
+  anchor: THREE.Vector3,
+  proj: ReturnType<typeof projectedExtents>,
+  viewDir: THREE.Vector3
+) {
+  viewBasis(viewDir);
   return anchor
     .clone()
     .addScaledVector(_right, proj.centerR)
@@ -139,9 +173,9 @@ export type RigFraming = {
   distance: number;
 };
 
-export function getRigFraming(aspect: number): RigFraming {
-  const proj = projectedExtents(motionEnvelopeBox(), FRAMING_ANCHOR);
-  const target = lookAtFromProjection(FRAMING_ANCHOR, proj);
+export function getRigFraming(aspect: number, viewDir: THREE.Vector3 = VIEW_DIR): RigFraming {
+  const proj = projectedExtents(motionEnvelopeBox(), FRAMING_ANCHOR, viewDir);
+  const target = lookAtFromProjection(FRAMING_ANCHOR, proj, viewDir);
   const { frameW, frameH } = framingSize(proj.width, proj.height);
 
   const halfFovY = (34 * Math.PI) / 360;
