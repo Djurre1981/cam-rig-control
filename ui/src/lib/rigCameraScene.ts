@@ -21,8 +21,26 @@ const _fwd = new THREE.Vector3(1, 0, 0);
 const _pos = new THREE.Vector3();
 const _worldQuat = new THREE.Quaternion();
 
-/** World position of the reference subject when the rig is at home pose. */
-export function homeSubjectPosition(distance = 1.15): THREE.Vector3 {
+/** Rig lens (+X) → Three.js camera (−Z). */
+export const RIG_LENS_TO_VIEW_QUAT = new THREE.Quaternion().setFromAxisAngle(
+  new THREE.Vector3(0, 1, 0),
+  -Math.PI / 2
+);
+
+export function rigCameraToViewQuaternion(
+  rigQuat: THREE.Quaternion,
+  out = new THREE.Quaternion()
+): THREE.Quaternion {
+  return out.copy(rigQuat).multiply(RIG_LENS_TO_VIEW_QUAT);
+}
+
+/** Local point on the reference subject placed on the home aim axis (torso center). */
+export const SUBJECT_AIM_LOCAL = new THREE.Vector3(0, 0.18, 0);
+
+export const HOME_SUBJECT_DISTANCE = 1.15;
+
+/** World position of the reference subject group when the rig is at home pose. */
+export function homeSubjectPosition(distance = HOME_SUBJECT_DISTANCE): THREE.Vector3 {
   const scene = new THREE.Scene();
   const nodes = buildRig(scene);
   applyRigPose(nodes, HOME_POSE);
@@ -30,7 +48,10 @@ export function homeSubjectPosition(distance = 1.15): THREE.Vector3 {
   nodes.camera.getWorldPosition(_pos);
   nodes.camera.getWorldQuaternion(_worldQuat);
   _fwd.set(1, 0, 0).applyQuaternion(_worldQuat);
-  return _pos.clone().add(_fwd.multiplyScalar(distance));
+  return _pos
+    .clone()
+    .add(_fwd.multiplyScalar(distance))
+    .sub(SUBJECT_AIM_LOCAL);
 }
 
 export const HOME_SUBJECT_POSITION = homeSubjectPosition();

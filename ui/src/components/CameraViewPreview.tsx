@@ -6,6 +6,7 @@ import {
   buildCameraViewEnvironment,
   CAMERA_VIEW_ASPECT,
   fovForZoom,
+  rigCameraToViewQuaternion,
 } from "../lib/rigCameraScene";
 import { cameraPitchRadians, cameraRollRadians } from "../lib/cameraAttitude";
 import { VirtualHorizon, type VirtualHorizonHandle } from "./VirtualHorizon";
@@ -141,7 +142,7 @@ export function CameraViewPreview({
         nodes.camera.getWorldPosition(_worldPos);
         nodes.camera.getWorldQuaternion(_worldQuat);
         cam.position.copy(_worldPos);
-        cam.quaternion.copy(_worldQuat);
+        rigCameraToViewQuaternion(_worldQuat, cam.quaternion);
         cam.updateMatrixWorld();
 
         if (showHorizonRef.current) {

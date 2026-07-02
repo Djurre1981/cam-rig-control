@@ -292,8 +292,8 @@ export function applyRigPose(nodes: RigNodes, pose: RigPose) {
   nodes.boomPivot.rotation.z = pose.boom;
   // Yaw: vertical axis → horizontal panorama in camera footage.
   nodes.yawHead.rotation.y = pose.yaw;
-  // Pitch: horizontal axis through lens (Z) → vertical loop in camera footage.
-  nodes.pitchHead.rotation.z = pose.pitch;
+  // Pitch motor + parallelogram: boom tilt is countered so pitch=0 stays level.
+  nodes.pitchHead.rotation.z = pose.pitch - pose.boom;
   const z = THREE.MathUtils.clamp(pose.zoom, 0.8, 2.5);
   nodes.lensMark.scale.setScalar(0.85 + (z - 1) * 0.4);
   nodes.camera.scale.setScalar(0.95 + (z - 1) * 0.06);
