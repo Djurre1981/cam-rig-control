@@ -6,8 +6,7 @@
  */
 
 import * as THREE from "three";
-import { BOOM_RANGE_DEG } from "./motionLimits";
-import { BOOM_REST_ANGLE } from "./rigKinematics";
+import { BOOM_MAX_RAD, BOOM_MIN_RAD, BOOM_REST_ANGLE } from "./rigConstants";
 import { FRONT_REACH, PIVOT_Y, REAR_REACH, applyRigPose, buildRig } from "./rigGeometry";
 import { HOME_SUBJECT_POSITION } from "./rigCameraScene";
 
@@ -45,8 +44,8 @@ export function viewDirFromOrbit(azimuth: number, elevation: number): THREE.Vect
   return orbitOffsetUnit(azimuth, elevation, new THREE.Vector3()).negate();
 }
 
-const CAMERA_EXTENT = 0.14;
-const BOOM_HALF = ((BOOM_RANGE_DEG / 2) * Math.PI) / 180;
+const CAMERA_EXTENT = 0.18;
+const BOOM_ANGLES = [BOOM_MIN_RAD, BOOM_MAX_RAD];
 
 export const FRAMING_ANCHOR = new THREE.Vector3(0, PIVOT_Y, 0);
 
@@ -61,15 +60,15 @@ function tipAtBoomAngle(boom: number, reach: number): THREE.Vector3 {
 /** Bounding box of all reachable poses (boom ±30°, full swing sweep). */
 function motionEnvelopeBox(): THREE.Box3 {
   const box = new THREE.Box3();
-  const boomAngles = [BOOM_REST_ANGLE - BOOM_HALF, BOOM_REST_ANGLE + BOOM_HALF];
+  const boomAngles = BOOM_ANGLES;
 
   for (const boom of boomAngles) {
     const rear = tipAtBoomAngle(boom, -REAR_REACH);
     const front = tipAtBoomAngle(boom, FRONT_REACH + CAMERA_EXTENT);
     box.expandByPoint(rear);
     box.expandByPoint(front);
-    box.expandByPoint(new THREE.Vector3(front.x, front.y + 0.14, 0));
-    box.expandByPoint(new THREE.Vector3(front.x, front.y - 0.28, 0));
+    box.expandByPoint(new THREE.Vector3(front.x, front.y + 0.28, 0));
+    box.expandByPoint(new THREE.Vector3(front.x, front.y - 0.38, 0));
     box.expandByPoint(new THREE.Vector3(rear.x, rear.y - 0.08, 0));
   }
 

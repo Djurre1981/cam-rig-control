@@ -1,9 +1,22 @@
 import demoShowcase from "../data/demo_showcase.json";
 import exampleSlowSwing from "../data/example_slow_swing.json";
+import { builtinAnimationAim } from "../data/builtinAnimationAims";
+import { EXTRA_BUILTIN_ANIMATIONS } from "../data/extraBuiltinAnimations";
 import { MOTOR_TRACK_COLORS, type TimelineProject } from "../types";
 import { normalizeProject } from "./normalizeProject";
 
-export const BUILTIN_ANIMATION_IDS = ["demo", "slow_swing", "blank"] as const;
+export const BUILTIN_ANIMATION_IDS = [
+  "demo",
+  "slow_swing",
+  "blank",
+  "reveal_rise",
+  "orbit_slow",
+  "push_in",
+  "crane_down",
+  "whip_pan",
+  "interview_two",
+  "timelapse_sweep",
+] as const;
 export type BuiltinAnimationId = (typeof BUILTIN_ANIMATION_IDS)[number];
 
 export type AnimationMeta = {
@@ -53,9 +66,26 @@ const BUILTIN_PROJECTS: Record<BuiltinAnimationId, TimelineProject> = {
   demo: normalizeProject(demoShowcase as TimelineProject),
   slow_swing: normalizeProject(exampleSlowSwing as TimelineProject),
   blank: blankProject(),
+  reveal_rise: EXTRA_BUILTIN_ANIMATIONS.reveal_rise,
+  orbit_slow: EXTRA_BUILTIN_ANIMATIONS.orbit_slow,
+  push_in: EXTRA_BUILTIN_ANIMATIONS.push_in,
+  crane_down: EXTRA_BUILTIN_ANIMATIONS.crane_down,
+  whip_pan: EXTRA_BUILTIN_ANIMATIONS.whip_pan,
+  interview_two: EXTRA_BUILTIN_ANIMATIONS.interview_two,
+  timelapse_sweep: EXTRA_BUILTIN_ANIMATIONS.timelapse_sweep,
 };
 
 BUILTIN_PROJECTS.blank.name = "Empty 30s";
+
+function withBuiltinAim(id: BuiltinAnimationId, project: TimelineProject): TimelineProject {
+  const aim = project.subjectAim ?? builtinAnimationAim(id, project);
+  if (!aim) return project;
+  return { ...project, subjectAim: aim };
+}
+
+for (const id of BUILTIN_ANIMATION_IDS) {
+  BUILTIN_PROJECTS[id] = withBuiltinAim(id, BUILTIN_PROJECTS[id]);
+}
 
 function readStore(): AnimationStore {
   try {
@@ -88,8 +118,8 @@ export function loadAnimationProject(id: string): TimelineProject | null {
   if (BUILTIN_ANIMATION_IDS.includes(id as BuiltinAnimationId)) {
     const builtinId = id as BuiltinAnimationId;
     const override = store.overrides[builtinId];
-    if (override) return normalizeProject(override.project);
-    return getBuiltinProject(builtinId);
+    const project = override ? normalizeProject(override.project) : getBuiltinProject(builtinId);
+    return withBuiltinAim(builtinId, project);
   }
   const user = store.user[id];
   if (!user) return null;

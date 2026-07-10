@@ -4,6 +4,8 @@ import { Inspector } from "./Inspector";
 import { PanelTabs } from "./PanelTabs";
 import type { RigPose } from "../lib/rigKinematics";
 import type { TargetLockMode } from "../lib/liveMotion";
+import type { FocusCalibration } from "../lib/focusCalibration";
+import type { SubjectAimPoint } from "../lib/subjectTarget";
 import type { ClipSelection, TimelineProject } from "../types";
 
 type RightTab = "live" | "inspector";
@@ -29,7 +31,18 @@ type Props = {
   zoomVelocity: number;
   demoMode: boolean;
   targetLock: TargetLockMode;
+  calibration: FocusCalibration;
+  focusFollow: boolean;
+  onMeasuredHomeChange: (metres: number | null) => void;
+  onClearCalibration: () => void;
+  onFocusFollowChange: (on: boolean) => void;
   onTargetLockChange: (mode: TargetLockMode) => void;
+  subjectAimPoint: SubjectAimPoint;
+  moveTargetEnabled: boolean;
+  onMoveTargetEnabledChange: (on: boolean) => void;
+  onResetSubjectAim: () => void;
+  gamepadEnabled: boolean;
+  onGamepadEnabledChange: (on: boolean) => void;
   onUpdateProject: (p: TimelineProject) => void;
   onDeleteSelection: () => void;
   onSpeedPercentChange: (pct: number) => void;
@@ -51,7 +64,18 @@ export function RightSidebar({
   zoomVelocity,
   demoMode,
   targetLock,
+  calibration,
+  focusFollow,
+  onMeasuredHomeChange,
+  onClearCalibration,
+  onFocusFollowChange,
   onTargetLockChange,
+  subjectAimPoint,
+  moveTargetEnabled,
+  onMoveTargetEnabledChange,
+  onResetSubjectAim,
+  gamepadEnabled,
+  onGamepadEnabledChange,
   onUpdateProject,
   onDeleteSelection,
   onSpeedPercentChange,
@@ -110,7 +134,18 @@ export function RightSidebar({
             zoomVelocity={zoomVelocity}
             speedPercent={speedPercent}
             targetLock={targetLock}
+            calibration={calibration}
+            focusFollow={focusFollow}
+            onMeasuredHomeChange={onMeasuredHomeChange}
+            onClearCalibration={onClearCalibration}
+            onFocusFollowChange={onFocusFollowChange}
             onTargetLockChange={onTargetLockChange}
+            subjectAimPoint={subjectAimPoint}
+            moveTargetEnabled={moveTargetEnabled}
+            onMoveTargetEnabledChange={onMoveTargetEnabledChange}
+            onResetSubjectAim={onResetSubjectAim}
+            gamepadEnabled={gamepadEnabled}
+            onGamepadEnabledChange={onGamepadEnabledChange}
             onSpeedPercentChange={onSpeedPercentChange}
             onVelocityChange={onVelocityChange}
             onZoomVelocityChange={onZoomVelocityChange}

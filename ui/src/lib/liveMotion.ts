@@ -4,8 +4,10 @@
 
 import { BOOM_RANGE_DEG, ROTATION_UNITS_PER_DEG, axisMaxVelSteps, stepMotionToRad } from "./motionLimits";
 import { boomTravelNormalized, clampPoseBoom } from "./boomGroundLimits";
-import { BOOM_REST_ANGLE, type RigPose } from "./rigKinematics";
+import { BOOM_MAX_DEG, BOOM_MIN_DEG, BOOM_REST_ANGLE } from "./rigConstants";
+import { type RigPose } from "./rigKinematics";
 import { aimAnglesForTarget, stepAngleToward } from "./targetLock";
+import type { SubjectAimPoint } from "./subjectTarget";
 
 const RAD = 180 / Math.PI;
 
@@ -23,8 +25,7 @@ export type AxisRotationReadout = {
 function boomMovement(rad: number, head?: HeadPose): number {
   if (head) return boomTravelNormalized(rad, head);
   const deg = (rad - BOOM_REST_ANGLE) * RAD;
-  const half = BOOM_RANGE_DEG / 2;
-  return Math.max(0, Math.min(1, (deg + half) / BOOM_RANGE_DEG));
+  return Math.max(0, Math.min(1, (deg - BOOM_MIN_DEG) / BOOM_RANGE_DEG));
 }
 
 function cyclicMovement(rad: number): number {
@@ -174,7 +175,8 @@ export function integrateLiveMotion(
   clampVelocity: (axis: number, v: number, pct: number) => number,
   targetLock: TargetLockMode = "off",
   zoomVelocity = 0,
-  zoomHoming = false
+  zoomHoming = false,
+  lockTarget?: SubjectAimPoint
 ): LiveMotionResult {
   const homingCompleted: number[] = [];
   let zoomHomingCompleted = false;
@@ -219,7 +221,7 @@ export function integrateLiveMotion(
   }
 
   if (lockOn) {
-    const aim = aimAnglesForTarget(pose);
+    const aim = aimAnglesForTarget(pose, lockTarget);
     const yawMax = stepMotionToRad(AIM_YAW, axisMotionVelSteps(AIM_YAW, speedPercent) * dtSec);
     const pitchMax = stepMotionToRad(AIM_PITCH, axisMotionVelSteps(AIM_PITCH, speedPercent) * dtSec);
 
@@ -238,7 +240,7 @@ export function integrateLiveMotion(
         pose.boom = beforeBoom + (pose.boom - beforeBoom) * (1 - hold);
         pose.swing = beforeSwing + (pose.swing - beforeSwing) * (1 - hold);
         clampPoseBoom(pose);
-        const reAim = aimAnglesForTarget(pose);
+        const reAim = aimAnglesForTarget(pose, lockTarget);
         aim.yaw = reAim.yaw;
         aim.pitch = reAim.pitch;
       }

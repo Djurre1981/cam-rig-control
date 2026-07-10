@@ -8,6 +8,9 @@ export type ViewLayout = {
   cameraView: boolean;
   /** Virtual horizon overlay on the camera view preview. */
   cameraHorizon: boolean;
+  /** Ghost poses in camera view (onion skin). */
+  cameraOnionSkin: boolean;
+  onionSkinOffset: number;
   inspector: boolean;
   transport: boolean;
   scrubSection: boolean;
@@ -20,6 +23,8 @@ export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
   rigPreview: true,
   cameraView: true,
   cameraHorizon: true,
+  cameraOnionSkin: false,
+  onionSkinOffset: 0.5,
   inspector: true,
   transport: true,
   scrubSection: true,
@@ -51,6 +56,8 @@ export function loadViewLayout(project: TimelineProject | null): ViewLayout {
       rigPreview: parsed.rigPreview ?? DEFAULT_VIEW_LAYOUT.rigPreview,
       cameraView: parsed.cameraView ?? DEFAULT_VIEW_LAYOUT.cameraView,
       cameraHorizon: parsed.cameraHorizon ?? DEFAULT_VIEW_LAYOUT.cameraHorizon,
+      cameraOnionSkin: parsed.cameraOnionSkin ?? DEFAULT_VIEW_LAYOUT.cameraOnionSkin,
+      onionSkinOffset: parsed.onionSkinOffset ?? DEFAULT_VIEW_LAYOUT.onionSkinOffset,
       inspector: parsed.inspector ?? DEFAULT_VIEW_LAYOUT.inspector,
       transport: parsed.transport ?? DEFAULT_VIEW_LAYOUT.transport,
       scrubSection: parsed.scrubSection ?? DEFAULT_VIEW_LAYOUT.scrubSection,

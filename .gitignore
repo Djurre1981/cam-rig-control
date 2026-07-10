@@ -7,6 +7,8 @@ host/config.yaml
 # Node
 ui/node_modules/
 ui/dist/
+ui/.agents/
+ui/skills-lock.json
 
 # IDE / OS
 .vscode/

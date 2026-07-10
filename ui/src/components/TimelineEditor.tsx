@@ -516,9 +516,6 @@ export function TimelineEditor({
           width: clipW,
           height: clipH,
           maxHeight: rowH - 8,
-          background: showGraph
-            ? undefined
-            : `linear-gradient(180deg, ${track.color}dd, ${track.color}99)`,
           ["--clip-color" as string]: track.color,
         }}
         onClick={(e) => {
@@ -661,7 +658,7 @@ export function TimelineEditor({
           width: clipW,
           height: clipH,
           maxHeight: rowH - 8,
-          background: `linear-gradient(180deg, ${track.color}dd, ${track.color}99)`,
+          ["--clip-color" as string]: track.color,
         }}
         onClick={(e) => {
           e.stopPropagation();

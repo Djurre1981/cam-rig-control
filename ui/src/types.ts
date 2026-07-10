@@ -7,6 +7,13 @@ export type SpeedKeyframe = {
   v: number;
 };
 
+export type RecordedFrame = {
+  /** Seconds from clip start. */
+  t: number;
+  /** Axis position (radians; boom offset from rest). */
+  pos: number;
+};
+
 export type MotorClip = {
   id: string;
   type: MotorClipType;
@@ -19,6 +26,8 @@ export type MotorClip = {
   reversed?: boolean;
   /** Speed envelope inside the clip (motor clips only). */
   speed_curve?: SpeedKeyframe[];
+  /** Sampled positions for RecordedClip. */
+  frames?: RecordedFrame[];
 };
 
 export type MotorTrack = {
@@ -58,6 +67,8 @@ export type TimelineProject = {
   duration: number;
   tracks: MotorTrack[];
   camera_tracks: CameraTrack[];
+  /** Default subject aim when this animation is loaded. */
+  subjectAim?: { x: number; y: number; z: number };
 };
 
 export type ClipSelection =
@@ -84,6 +95,20 @@ export type PaletteItem = {
   target: "motor" | CameraTrackId;
   defaults: PaletteItemDefaults;
   color: string;
+};
+
+export type NamedPose = {
+  id: string;
+  name: string;
+  pose: {
+    boom: number;
+    swing: number;
+    yaw: number;
+    pitch: number;
+    zoom: number;
+  };
+  subjectAim?: { x: number; y: number; z: number };
+  builtin?: boolean;
 };
 
 export const AXIS_LABELS = ["Boom", "Swing", "Yaw", "Pitch"] as const;

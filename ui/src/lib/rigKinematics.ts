@@ -4,10 +4,10 @@
  * Ref: https://www.youtube.com/watch?v=kPe2O8CkQAY (~11:26), construction docs
  *
  * Axis order in firmware / timeline:
- *   0 boom  — A-axis: arm tilts on horizontal axle between risers (parallelogram keeps head level)
- *   1 swing — turret slew bearing: whole upper rig rotates about vertical axis
- *   2 yaw   — Y head: pan at end of boom
- *   3 pitch — Z head: tilt in U-cradle
+ *   0 boom  — parallelogram arm tilt (+40° max, −27° min from horizontal)
+ *   1 swing — turret slew bearing (boom rotation, vertical axis at pole top)
+ *   2 yaw   — camera pan at end of boom
+ *   3 pitch — camera tilt in U-cradle (decoupled from boom via parallelogram)
  */
 
 import type { MotorClip, TimelineProject } from "../types";
@@ -21,6 +21,7 @@ import {
 import { clampPoseBoom } from "./boomGroundLimits";
 import { BOOM_REST_ANGLE } from "./rigConstants";
 import { ensureSpeedCurve, motionProgressAtTime, speedAtTime } from "./speedCurve";
+import { interpolateRecordedFrames, poseAxisToRecordValue } from "./recordedClipPlayback";
 
 export type RigPose = {
   /** Radians — arm tilt about horizontal axle (positive = arm rises). */
@@ -81,9 +82,11 @@ function axisPositionAtTime(
         const position = from + (cappedTo - from) * smooth;
         pos = movePositionToRad(axis, position);
       }
-    } else if (clip.type === "RecordedClip") {
-      const dt = Math.min(t, end) - clip.start;
-      pos += Math.sin(dt * 0.7) * 0.12;
+    } else if (clip.type === "RecordedClip" && clip.frames && clip.frames.length > 0) {
+      const localT = Math.min(t, end) - clip.start;
+      if (t >= clip.start) {
+        pos = interpolateRecordedFrames(clip.frames, localT);
+      }
     }
   }
 

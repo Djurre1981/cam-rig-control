@@ -11,7 +11,12 @@ import {
 } from "../lib/rigCameraScene";
 import { cameraPitchRadians, cameraRollRadians } from "../lib/cameraAttitude";
 import { VirtualHorizon, type VirtualHorizonHandle } from "./VirtualHorizon";
+import { FocusDistanceBadge } from "./FocusDistanceBadge";
+import { createTargetDragControls } from "../lib/targetDragControls";
+import { applySubjectAimToMesh, type SubjectAimPoint } from "../lib/subjectTarget";
+import type { FocusCalibration } from "../lib/focusCalibration";
 import type { TimelineProject } from "../types";
+import { onionGhostPoses } from "../lib/onionSkin";
 
 type Props = {
   project: TimelineProject;
@@ -19,8 +24,15 @@ type Props = {
   speedPercent?: number;
   liveVelocities?: number[];
   livePose?: RigPose;
+  calibration?: FocusCalibration;
+  focusFollow?: boolean;
+  subjectAimPoint?: SubjectAimPoint;
+  moveTargetEnabled?: boolean;
+  onSubjectAimChange?: (aim: SubjectAimPoint) => void;
   docked?: boolean;
   showHorizon?: boolean;
+  onionSkinEnabled?: boolean;
+  onionSkinOffset?: number;
 };
 export function CameraViewPreview({
   project,
@@ -28,17 +40,44 @@ export function CameraViewPreview({
   speedPercent = 100,
   liveVelocities,
   livePose,
+  calibration,
+  focusFollow,
+  subjectAimPoint,
+  moveTargetEnabled = false,
+  onSubjectAimChange,
   docked,
   showHorizon = true,
+  onionSkinEnabled = false,
+  onionSkinOffset = 0.5,
 }: Props) {
+  const displayPose =
+    livePose ??
+    (liveVelocities
+      ? poseFromLive(liveVelocities, { boom: BOOM_REST_ANGLE, swing: 0, yaw: 0, pitch: 0, zoom: 1 }, speedPercent)
+      : poseFromTimeline(project, playhead, speedPercent));
   const shellRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rigRef = useRef<ReturnType<typeof buildRig> | null>(null);
   const viewCameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const horizonRef = useRef<VirtualHorizonHandle>(null);
   const showHorizonRef = useRef(showHorizon);
+  const subjectRef = useRef<THREE.Object3D | null>(null);
+  const onAimChangeRef = useRef(onSubjectAimChange);
+  const moveTargetRef = useRef(moveTargetEnabled);
+  const subjectAimRef = useRef(subjectAimPoint);
+  const onionRef = useRef({ enabled: onionSkinEnabled, offset: onionSkinOffset });
+  const projectRef = useRef(project);
+  const playheadRef = useRef(playhead);
+  const speedRef = useRef(speedPercent);
 
   showHorizonRef.current = showHorizon;
+  onAimChangeRef.current = onSubjectAimChange;
+  moveTargetRef.current = moveTargetEnabled;
+  subjectAimRef.current = subjectAimPoint;
+  onionRef.current = { enabled: onionSkinEnabled, offset: onionSkinOffset };
+  projectRef.current = project;
+  playheadRef.current = playhead;
+  speedRef.current = speedPercent;
   useLayoutEffect(() => {
     if (!docked) return;
     const shell = shellRef.current;
@@ -85,11 +124,44 @@ export function CameraViewPreview({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(SCENE_VIEW_BG);
     buildCameraViewEnvironment(scene);
+    subjectRef.current = scene.getObjectByName("reference-subject") ?? null;
+    if (subjectRef.current && subjectAimRef.current) {
+      applySubjectAimToMesh(subjectRef.current, subjectAimRef.current);
+    }
 
     const rigScene = new THREE.Scene();
     const rigNodes = buildRig(rigScene);
     rigNodes.root.visible = false;
     rigRef.current = rigNodes;
+
+    const onionScene = new THREE.Scene();
+    const beforeRig = buildRig(onionScene);
+    const afterRig = buildRig(onionScene);
+    beforeRig.root.visible = false;
+    afterRig.root.visible = false;
+    const ghostMatBefore = new THREE.MeshBasicMaterial({
+      color: 0x4af626,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+      wireframe: true,
+    });
+    const ghostMatAfter = new THREE.MeshBasicMaterial({
+      color: 0xe8c85d,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+      wireframe: true,
+    });
+    const tintGhost = (root: THREE.Object3D, mat: THREE.Material) => {
+      root.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.material = mat;
+      });
+    };
+    tintGhost(beforeRig.root, ghostMatBefore);
+    tintGhost(afterRig.root, ghostMatAfter);
+    scene.add(beforeRig.root);
+    scene.add(afterRig.root);
 
     const viewCamera = new THREE.PerspectiveCamera(fovForZoom(1), CAMERA_VIEW_ASPECT, 0.02, 40);
     viewCameraRef.current = viewCamera;
@@ -97,6 +169,13 @@ export function CameraViewPreview({
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
+
+    const targetDrag = createTargetDragControls(
+      renderer.domElement,
+      () => viewCameraRef.current,
+      () => moveTargetRef.current,
+      (aim) => onAimChangeRef.current?.(aim)
+    );
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.45));
     const key = new THREE.DirectionalLight(0xfff4e8, 1.05);
@@ -149,19 +228,44 @@ export function CameraViewPreview({
           const pitchDeg = (cameraPitchRadians(_worldQuat) * 180) / Math.PI;
           horizonRef.current?.setAttitude(rollDeg, pitchDeg);
         }
+
+        const onion = onionRef.current;
+        if (onion.enabled) {
+          const ghosts = onionGhostPoses(projectRef.current, playheadRef.current, speedRef.current, {
+            enabled: true,
+            mode: "both",
+            offsetSec: onion.offset,
+            opacity: 0.35,
+          });
+          beforeRig.root.visible = !!ghosts.before;
+          afterRig.root.visible = !!ghosts.after;
+          if (ghosts.before) applyRigPose(beforeRig, ghosts.before);
+          if (ghosts.after) applyRigPose(afterRig, ghosts.after);
+        } else {
+          beforeRig.root.visible = false;
+          afterRig.root.visible = false;
+        }
       }      renderer.render(scene, viewCamera);
     };
     animate();
 
     return () => {
       cancelAnimationFrame(frameId);
+      targetDrag.dispose();
       ro.disconnect();
       renderer.dispose();
       container.removeChild(renderer.domElement);
       rigRef.current = null;
       viewCameraRef.current = null;
+      subjectRef.current = null;
     };
   }, [docked]);
+
+  useEffect(() => {
+    const subject = subjectRef.current;
+    if (!subject || !subjectAimPoint) return;
+    applySubjectAimToMesh(subject, subjectAimPoint);
+  }, [subjectAimPoint]);
 
   useEffect(() => {
     const nodes = rigRef.current;
@@ -185,9 +289,29 @@ export function CameraViewPreview({
     >
       <div className="rig-preview-header">
         <span>Camera view</span>
-        <span className="rig-preview-hint">Lens preview · home aim reference</span>
+        {calibration && (
+          <FocusDistanceBadge
+            pose={displayPose}
+            calibration={calibration}
+            focusFollow={focusFollow}
+            subjectAimPoint={subjectAimPoint}
+            compact
+          />
+        )}
+        <span className="rig-preview-hint">
+          {moveTargetEnabled
+            ? "LMB drag target on ground"
+            : onionSkinEnabled
+              ? `Onion ±${onionSkinOffset}s`
+              : "Lens preview · home aim reference"}
+        </span>
       </div>
-      <div ref={containerRef} className="rig-preview-canvas">
+      <div
+        ref={containerRef}
+        className={["rig-preview-canvas", moveTargetEnabled ? "move-target-mode" : ""]
+          .filter(Boolean)
+          .join(" ")}
+      >
         <VirtualHorizon ref={horizonRef} visible={showHorizon} />
       </div>    </div>
   );

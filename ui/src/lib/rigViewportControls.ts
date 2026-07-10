@@ -112,6 +112,7 @@ export function createViewportControls(
 ) {
   const state = defaultState();
   let drag: { mode: "orbit" | "pan"; lastX: number; lastY: number } | null = null;
+  let navigationEnabled = true;
 
   const reset = () => {
     const fresh = defaultState();
@@ -125,6 +126,7 @@ export function createViewportControls(
   };
 
   const onPointerDown = (e: PointerEvent) => {
+    if (!navigationEnabled) return;
     if (e.button === 1) {
       e.preventDefault();
       drag = { mode: "orbit", lastX: e.clientX, lastY: e.clientY };
@@ -168,6 +170,7 @@ export function createViewportControls(
   };
 
   const onWheel = (e: WheelEvent) => {
+    if (!navigationEnabled) return;
     e.preventDefault();
     const factor = Math.exp(-e.deltaY * ZOOM_SENS);
     state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.zoom * factor));
@@ -188,6 +191,10 @@ export function createViewportControls(
     state,
     reset,
     apply: () => applyViewport(getCamera(), getAspect(), useOrtho, state),
+    setNavigationEnabled: (on: boolean) => {
+      navigationEnabled = on;
+      if (!on) drag = null;
+    },
     dispose: () => {
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);

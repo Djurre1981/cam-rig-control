@@ -4,7 +4,7 @@
  */
 
 import { BOOM_REST_ANGLE, poseFromTimeline } from "./rigKinematics";
-import { BOOM_RANGE_DEG } from "./motionLimits";
+import { BOOM_MAX_DEG, BOOM_MIN_DEG, BOOM_RANGE_DEG } from "./rigConstants";
 import type { TimelineProject } from "../types";
 
 export type EffectorState = {
@@ -21,10 +21,13 @@ export type EffectorState = {
 
 const RAD = 180 / Math.PI;
 
+function degSigned(rad: number): number {
+  return (rad - BOOM_REST_ANGLE) * RAD;
+}
+
 function boomMovement(rad: number): number {
   const deg = (rad - BOOM_REST_ANGLE) * RAD;
-  const half = BOOM_RANGE_DEG / 2;
-  return Math.max(0, Math.min(1, (deg + half) / BOOM_RANGE_DEG));
+  return Math.max(0, Math.min(1, (deg - BOOM_MIN_DEG) / BOOM_RANGE_DEG));
 }
 
 function cyclicMovement(rad: number): number {
@@ -56,7 +59,7 @@ export function effectorsAtTime(
       name: track.label,
       color: track.color,
       movement,
-      display: i === 0 ? `${((movement - 0.5) * BOOM_RANGE_DEG).toFixed(0)}°` : `${deg.toFixed(0)}°`,
+      display: i === 0 ? `${degSigned(rad).toFixed(1)}°` : `${deg.toFixed(0)}°`,
       live: motorLive(track, t),
     };
   });

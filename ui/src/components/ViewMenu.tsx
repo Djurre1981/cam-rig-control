@@ -9,7 +9,7 @@ type Props = {
 };
 
 type MenuItem =
-  | { kind: "toggle"; key: keyof Omit<ViewLayout, "timelineTracks">; label: string; indent?: boolean }
+  | { kind: "toggle"; key: keyof Omit<ViewLayout, "timelineTracks" | "onionSkinOffset">; label: string; indent?: boolean }
   | { kind: "sep" }
   | { kind: "track"; trackId: string; label: string; section?: string };
 
@@ -19,6 +19,7 @@ function buildItems(project: TimelineProject): MenuItem[] {
     { kind: "toggle", key: "rigPreview", label: "3D preview" },
     { kind: "toggle", key: "cameraView", label: "Camera view" },
     { kind: "toggle", key: "cameraHorizon", label: "Virtual horizon", indent: true },
+    { kind: "toggle", key: "cameraOnionSkin", label: "Onion skin ghosts", indent: true },
     { kind: "toggle", key: "inspector", label: "Right sidebar" },
     { kind: "sep" },
     { kind: "toggle", key: "transport", label: "Play / pause & time" },
@@ -56,7 +57,7 @@ export function ViewMenu({ layout, project, onChange }: Props) {
     };
   }, [open]);
 
-  const setToggle = (key: keyof Omit<ViewLayout, "timelineTracks">, checked: boolean) => {
+  const setToggle = (key: keyof Omit<ViewLayout, "timelineTracks" | "onionSkinOffset">, checked: boolean) => {
     onChange({ ...layout, [key]: checked });
   };
 

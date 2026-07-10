@@ -1,7 +1,7 @@
 /**
  * Physical motion speed limits derived from minimum traverse times.
  *
- * Boom:  60° full range in 2 s
+ * Boom:  67° full range (+40° to −27°) in 2 s
  * Swing: 360° in 4 s
  * Yaw:   360° in 2 s
  * Pitch: 360° in 2 s
@@ -10,13 +10,14 @@
  */
 
 import { AXIS_LABELS } from "../types";
+import { BOOM_RANGE_DEG } from "./rigConstants";
+
+export { BOOM_RANGE_DEG };
 
 /** Geared axes (boom, swing): 200 × 16 × 5.18 */
 export const STEPS_PER_REV_GEARED = 16576;
 /** Direct NEMA 17 (yaw, pitch): 200 × 16 */
 export const STEPS_PER_REV_DIRECT = 3200;
-
-export const BOOM_RANGE_DEG = 60;
 
 /** Timeline rotation axes: 10 units per degree, 3600 units = 360° (swing, yaw, pitch). */
 export const ROTATION_UNITS_PER_DEG = 10;

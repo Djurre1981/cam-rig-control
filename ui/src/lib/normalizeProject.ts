@@ -29,6 +29,20 @@ export function projectSnapshot(project: TimelineProject): string {
   return JSON.stringify(project);
 }
 
+/**
+ * Snapshot of user-editable animation content. Excludes `duration` because the
+ * timeline viewport auto-extends duration while scrolling/zooming without a user edit.
+ */
+export function projectEditSnapshot(project: TimelineProject): string {
+  return JSON.stringify({
+    version: project.version,
+    name: project.name,
+    tracks: project.tracks,
+    camera_tracks: project.camera_tracks,
+    subjectAim: project.subjectAim,
+  });
+}
+
 export function projectsEqual(a: TimelineProject, b: TimelineProject): boolean {
-  return projectSnapshot(a) === projectSnapshot(b);
+  return projectEditSnapshot(a) === projectEditSnapshot(b);
 }

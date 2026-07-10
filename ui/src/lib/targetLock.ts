@@ -10,6 +10,7 @@
 import * as THREE from "three";
 import { applyRigPose, buildRig, type RigNodes } from "./rigGeometry";
 import { HOME_SUBJECT_POSITION, SUBJECT_AIM_LOCAL } from "./rigCameraScene";
+import type { SubjectAimPoint } from "./subjectTarget";
 import type { RigPose } from "./rigKinematics";
 import { shortestRadDelta } from "./liveMotion";
 
@@ -32,6 +33,12 @@ const _camQuat = new THREE.Quaternion();
 const _invQuat = new THREE.Quaternion();
 const _toTarget = new THREE.Vector3();
 const _local = new THREE.Vector3();
+const _targetPoint = new THREE.Vector3();
+
+function resolveTarget(target: THREE.Vector3 | SubjectAimPoint): THREE.Vector3 {
+  if (target instanceof THREE.Vector3) return target;
+  return _targetPoint.set(target.x, target.y, target.z);
+}
 
 export type AimSolution = {
   /** Yaw angle (radians) that centers the target horizontally. */
@@ -49,7 +56,11 @@ export type AimSolution = {
  * frame with yaw = pitch = 0, then express the target direction in that frame
  * to read off the required yaw (azimuth about Y) and pitch (elevation).
  */
-export function aimAnglesForTarget(pose: RigPose, target = TARGET_LOCK_POINT): AimSolution {
+export function aimAnglesForTarget(
+  pose: RigPose,
+  target: THREE.Vector3 | SubjectAimPoint = TARGET_LOCK_POINT
+): AimSolution {
+  const aim = resolveTarget(target);
   const nodes = rigNodes();
 
   applyRigPose(nodes, { ...pose, yaw: 0, pitch: 0 });
@@ -59,7 +70,7 @@ export function aimAnglesForTarget(pose: RigPose, target = TARGET_LOCK_POINT): A
   nodes.yawHead.getWorldQuaternion(_camQuat);
 
   _invQuat.copy(_camQuat).invert();
-  _toTarget.copy(target).sub(_camPos);
+  _toTarget.copy(aim).sub(_camPos);
   _local.copy(_toTarget).applyQuaternion(_invQuat);
 
   // Local lens forward is +X. Yaw rotates about +Y (turns X toward ±Z),
@@ -68,7 +79,7 @@ export function aimAnglesForTarget(pose: RigPose, target = TARGET_LOCK_POINT): A
   // logical pitch that keeps footage level at pitch = 0.
   const yaw = Math.atan2(-_local.z, _local.x);
   const horiz = Math.hypot(_local.x, _local.z);
-  const pitch = Math.atan2(_local.y, horiz) + pose.boom;
+  const pitch = Math.atan2(_local.y, horiz);
 
   return { yaw, pitch };
 }

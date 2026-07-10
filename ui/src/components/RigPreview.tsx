@@ -14,6 +14,14 @@ import { createRigAxisCompass } from "../lib/rigAxisCompass";
 
 import { createViewportControls } from "../lib/rigViewportControls";
 
+import { createTargetDragControls } from "../lib/targetDragControls";
+
+import { applySubjectAimToMesh, type SubjectAimPoint } from "../lib/subjectTarget";
+
+import { FocusDistanceBadge } from "./FocusDistanceBadge";
+
+import type { FocusCalibration } from "../lib/focusCalibration";
+
 import type { TimelineProject } from "../types";
 
 type Props = {
@@ -28,6 +36,16 @@ type Props = {
 
   livePose?: RigPose;
 
+  calibration?: FocusCalibration;
+
+  focusFollow?: boolean;
+
+  subjectAimPoint?: SubjectAimPoint;
+
+  moveTargetEnabled?: boolean;
+
+  onSubjectAimChange?: (aim: SubjectAimPoint) => void;
+
   compact?: boolean;
 
   docked?: boolean;
@@ -36,7 +54,13 @@ type Props = {
 
 
 
-export function RigPreview({ project, playhead, speedPercent = 100, liveVelocities, livePose, compact, docked }: Props) {
+export function RigPreview({ project, playhead, speedPercent = 100, liveVelocities, livePose, calibration, focusFollow, subjectAimPoint, moveTargetEnabled = false, onSubjectAimChange, compact, docked }: Props) {
+
+  const displayPose =
+    livePose ??
+    (liveVelocities
+      ? poseFromLive(liveVelocities, { boom: BOOM_REST_ANGLE, swing: 0, yaw: 0, pitch: 0, zoom: 1 }, speedPercent)
+      : poseFromTimeline(project, playhead, speedPercent));
 
   const shellRef = useRef<HTMLDivElement>(null);
 
@@ -45,6 +69,20 @@ export function RigPreview({ project, playhead, speedPercent = 100, liveVelociti
   const nodesRef = useRef<ReturnType<typeof buildRig> | null>(null);
 
   const controlsRef = useRef<ReturnType<typeof createViewportControls> | null>(null);
+
+  const subjectRef = useRef<THREE.Object3D | null>(null);
+
+  const onAimChangeRef = useRef(onSubjectAimChange);
+
+  const moveTargetRef = useRef(moveTargetEnabled);
+
+  const subjectAimRef = useRef(subjectAimPoint);
+
+  onAimChangeRef.current = onSubjectAimChange;
+
+  moveTargetRef.current = moveTargetEnabled;
+
+  subjectAimRef.current = subjectAimPoint;
 
 
 
@@ -160,6 +198,11 @@ export function RigPreview({ project, playhead, speedPercent = 100, liveVelociti
 
     scene.add(buildPreviewEnvironment());
 
+    subjectRef.current = scene.getObjectByName("reference-subject") ?? null;
+    if (subjectRef.current && subjectAimRef.current) {
+      applySubjectAimToMesh(subjectRef.current, subjectAimRef.current);
+    }
+
 
 
     const useOrtho = false;
@@ -244,7 +287,12 @@ export function RigPreview({ project, playhead, speedPercent = 100, liveVelociti
 
     controlsRef.current = controls;
 
-
+    const targetDrag = createTargetDragControls(
+      renderer.domElement,
+      () => camera,
+      () => moveTargetRef.current,
+      (aim) => onAimChangeRef.current?.(aim)
+    );
 
     const compass = createRigAxisCompass(renderer);
 
@@ -344,6 +392,8 @@ export function RigPreview({ project, playhead, speedPercent = 100, liveVelociti
 
       controls.dispose();
 
+      targetDrag.dispose();
+
       controlsRef.current = null;
 
       ro.disconnect();
@@ -354,9 +404,31 @@ export function RigPreview({ project, playhead, speedPercent = 100, liveVelociti
 
       nodesRef.current = null;
 
+      subjectRef.current = null;
+
     };
 
   }, [docked]);
+
+
+
+  useEffect(() => {
+
+    controlsRef.current?.setNavigationEnabled(!moveTargetEnabled);
+
+  }, [moveTargetEnabled]);
+
+
+
+  useEffect(() => {
+
+    const subject = subjectRef.current;
+
+    if (!subject || !subjectAimPoint) return;
+
+    applySubjectAimToMesh(subject, subjectAimPoint);
+
+  }, [subjectAimPoint]);
 
 
 
@@ -396,9 +468,21 @@ export function RigPreview({ project, playhead, speedPercent = 100, liveVelociti
 
         <span>3D preview</span>
 
+        {calibration && (
+          <FocusDistanceBadge
+            pose={displayPose}
+            calibration={calibration}
+            focusFollow={focusFollow}
+            subjectAimPoint={subjectAimPoint}
+            compact
+          />
+        )}
+
         <span className="rig-preview-hint">
 
-          MMB orbit · RMB pan · wheel zoom
+          {moveTargetEnabled
+            ? "LMB drag target · orbit/pan disabled"
+            : "MMB orbit · RMB pan · wheel zoom"}
 
           <button
 
@@ -420,7 +504,12 @@ export function RigPreview({ project, playhead, speedPercent = 100, liveVelociti
 
       </div>
 
-      <div ref={containerRef} className="rig-preview-canvas" />
+      <div
+        ref={containerRef}
+        className={["rig-preview-canvas", moveTargetEnabled ? "move-target-mode" : ""]
+          .filter(Boolean)
+          .join(" ")}
+      />
 
     </div>
 

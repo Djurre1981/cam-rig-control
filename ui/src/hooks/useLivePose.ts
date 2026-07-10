@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clampAxisVelocity } from "../lib/motionLimits";
 import { integrateLiveMotion, type TargetLockMode } from "../lib/liveMotion";
 import { poseFromTimeline, type RigPose } from "../lib/rigKinematics";
+import type { SubjectAimPoint } from "../lib/subjectTarget";
 import type { TimelineProject } from "../types";
 
 const NO_HOMING = [false, false, false, false] as const;
@@ -15,9 +16,11 @@ export function useLivePose(
   targetLock: TargetLockMode = "off",
   zoomVelocity = 0,
   onHomingComplete?: (axis: number) => void,
-  onZoomHomingComplete?: () => void
+  onZoomHomingComplete?: () => void,
+  subjectAimPoint?: SubjectAimPoint
 ): {
   pose: RigPose;
+  recallPose: (p: RigPose) => void;
   startHoming: (axis: number) => void;
   startZoomHoming: () => void;
   homeAll: () => void;
@@ -35,12 +38,14 @@ export function useLivePose(
   const onZoomHomingCompleteRef = useRef(onZoomHomingComplete);
   const targetLockRef = useRef(targetLock);
   const zoomVelocityRef = useRef(zoomVelocity);
+  const subjectAimRef = useRef(subjectAimPoint);
 
   poseRef.current = pose;
   onHomingCompleteRef.current = onHomingComplete;
   onZoomHomingCompleteRef.current = onZoomHomingComplete;
   targetLockRef.current = targetLock;
   zoomVelocityRef.current = zoomVelocity;
+  subjectAimRef.current = subjectAimPoint;
 
   const startHoming = useCallback((axis: number) => {
     homingRef.current[axis] = true;
@@ -100,7 +105,8 @@ export function useLivePose(
         clampAxisVelocity,
         targetLockRef.current,
         zoomVelocityRef.current,
-        zoomHomingRef.current
+        zoomHomingRef.current,
+        subjectAimRef.current
       );
 
       for (const axis of homingCompleted) {
@@ -124,8 +130,15 @@ export function useLivePose(
     return () => cancelAnimationFrame(raf);
   }, [enabled, velocities, speedPercent]);
 
+  const recallPose = useCallback((p: RigPose) => {
+    const next = { ...p };
+    poseRef.current = next;
+    setPose(next);
+  }, []);
+
   return {
     pose: enabled ? pose : poseFromTimeline(project, playhead, speedPercent),
+    recallPose,
     startHoming,
     startZoomHoming,
     homeAll,

@@ -30,8 +30,17 @@ import { CLIP_PALETTE } from "./data/palette";
 import { usePlayback } from "./hooks/usePlayback";
 
 import { useLivePose } from "./hooks/useLivePose";
+import { useFocusCalibration } from "./hooks/useFocusCalibration";
+import { useSubjectTarget } from "./hooks/useSubjectTarget";
+import { useMotionRecording } from "./hooks/useMotionRecording";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useGamepad } from "./hooks/useGamepad";
 
 import type { TargetLockMode } from "./lib/liveMotion";
+import type { RigPose } from "./lib/rigKinematics";
+
+import { PoseSidebar } from "./components/PoseSidebar";
+import { DocsPage } from "./pages/DocsPage";
 
 import {
 
@@ -93,7 +102,10 @@ export default function App() {
 
   const [activeId, setActiveId] = useState("demo");
 
-  const [project, setProject] = useState<TimelineProject>(() => loadAnimationProject("demo")!);
+  const [project, setProject] = useState<TimelineProject>(() => {
+    const loaded = normalizeProject(loadAnimationProject("demo")!);
+    return structuredClone(loaded);
+  });
 
   const updateProject = useCallback((p: TimelineProject) => {
     setProject(ensureTimelineDuration(p));
@@ -103,7 +115,10 @@ export default function App() {
     setProject((p) => extendTimelineDuration(p, minDuration));
   }, []);
 
-  const [savedProject, setSavedProject] = useState<TimelineProject>(() => loadAnimationProject("demo")!);
+  const [savedProject, setSavedProject] = useState<TimelineProject>(() => {
+    const loaded = normalizeProject(loadAnimationProject("demo")!);
+    return structuredClone(loaded);
+  });
 
   const [selection, setSelection] = useState<ClipSelection>(null);
 
@@ -116,6 +131,18 @@ export default function App() {
   const [speedPercent, setSpeedPercent] = useState(100);
 
   const [targetLock, setTargetLock] = useState<TargetLockMode>("off");
+
+  const {
+    aimPoint: subjectAimPoint,
+    setAimPoint: setSubjectAimPoint,
+    moveEnabled: moveTargetEnabled,
+    setMoveEnabled: setMoveTargetEnabled,
+    resetAimToHome: resetSubjectAim,
+  } = useSubjectTarget();
+
+  const [gamepadEnabled, setGamepadEnabled] = useState(false);
+
+  const [appView, setAppView] = useState<"editor" | "docs">("editor");
 
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
 
@@ -161,7 +188,7 @@ export default function App() {
 
   const { playing, playhead, play, pause, stop, scrub } = usePlayback(project.duration);
 
-  const { pose: livePose, startHoming, startZoomHoming, homeAll, cancelHoming, cancelZoomHoming } =
+  const { pose: livePose, recallPose, startHoming, startZoomHoming, homeAll, cancelHoming, cancelZoomHoming } =
     useLivePose(
     true,
     project,
@@ -180,8 +207,17 @@ export default function App() {
     },
     () => {
       setZoomVelocity(0);
-    }
+    },
+    subjectAimPoint
   );
+
+  const {
+    calibration,
+    setMeasuredHomeM,
+    clearCalibration,
+    focusFollow,
+    setFocusFollow,
+  } = useFocusCalibration();
 
 
 
@@ -205,11 +241,15 @@ export default function App() {
 
       stop();
 
+      if (normalized.subjectAim) {
+        setSubjectAimPoint(normalized.subjectAim);
+      }
+
       refreshList();
 
     },
 
-    [refreshList, stop]
+    [refreshList, stop, setSubjectAimPoint]
 
   );
 
@@ -323,29 +363,58 @@ export default function App() {
 
     setSelection(null);
 
-  }, [selection, project]);
+  }, [selection, project, updateProject]);
 
+  const { recording: motionRecording, toggleRecording } = useMotionRecording(
+    () => livePose,
+    () => playhead,
+    updateProject
+  );
 
+  useGamepad(gamepadEnabled, speedPercent, (v) => setVelocities(v), setZoomVelocity);
 
-  useEffect(() => {
-
-    const onKeyDown = (e: KeyboardEvent) => {
-
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-
-        e.preventDefault();
-
+  const shortcutHandlers = useMemo(
+    () => ({
+      playPause: () => (playing ? pause() : play()),
+      stop: () => stop(),
+      stepBack: () => scrub(Math.max(0, playhead - 0.25)),
+      stepForward: () => scrub(Math.min(project.duration, playhead + 0.25)),
+      deleteSelection: () => deleteSelection(),
+      save: () => {
         if (dirty) handleSave();
+      },
+      toggleRecord: () => toggleRecording(project),
+      homeAll: () => {
+        setVelocities([0, 0, 0, 0]);
+        setZoomVelocity(0);
+        homeAll();
+      },
+    }),
+    [
+      playing,
+      pause,
+      play,
+      stop,
+      scrub,
+      playhead,
+      project,
+      deleteSelection,
+      dirty,
+      handleSave,
+      toggleRecording,
+      homeAll,
+    ]
+  );
 
-      }
+  useKeyboardShortcuts(shortcutHandlers, appView === "editor");
 
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => window.removeEventListener("keydown", onKeyDown);
-
-  }, [dirty, handleSave]);
+  const handleRecallPose = useCallback(
+    (pose: RigPose, aim?: { x: number; y: number; z: number }) => {
+      recallPose(pose);
+      if (aim) setSubjectAimPoint(aim);
+    },
+    [recallPose, setSubjectAimPoint]
+  );
 
   useEffect(() => {
     setViewLayout((prev) => mergeTrackVisibility(prev, project));
@@ -355,14 +424,26 @@ export default function App() {
     saveViewLayout(viewLayout);
   }, [viewLayout]);
 
+  if (appView === "docs") {
+    return <DocsPage onBack={() => setAppView("editor")} />;
+  }
+
   return (
 
     <div className="app-shell">
 
       <header className="app-header">
 
+        <div className="header-telemetry" aria-hidden="true">
+          <span className="telemetry-unit">UNIT / DIW-01</span>
+          <span className="telemetry-rev">REV 2.6</span>
+        </div>
+
         <div className="brand">
-          <h1>Cam Rig Control</h1>
+          <h1>
+            <span className="brand-glyph" aria-hidden="true">CRC</span>
+            <span className="brand-title">Cam Rig Control</span>
+          </h1>
           <span className="project-name">
             {project.name}
             {dirty && <span className="project-modified"> · unsaved</span>}
@@ -380,6 +461,9 @@ export default function App() {
         )}
 
         <div className="header-actions">
+        <button type="button" className="view-menu-trigger" onClick={() => setAppView("docs")} title="Documentation">
+          Docs
+        </button>
         <ViewMenu layout={viewLayout} project={project} onChange={setViewLayout} />
         </div>
 
@@ -422,6 +506,15 @@ export default function App() {
               />
             </CollapsibleSection>
 
+            <CollapsibleSection title="Poses" storageKey="left-poses" defaultOpen badge="10">
+              <PoseSidebar
+                compact
+                livePose={livePose}
+                subjectAimPoint={subjectAimPoint}
+                onRecallPose={handleRecallPose}
+              />
+            </CollapsibleSection>
+
             <CollapsibleSection title="Motions" storageKey="left-motions" defaultOpen badge="5">
               <ClipPalette
                 compact
@@ -448,6 +541,11 @@ export default function App() {
                         playhead={playhead}
                         speedPercent={speedPercent}
                         livePose={livePose}
+                        calibration={calibration}
+                        focusFollow={focusFollow}
+                        subjectAimPoint={subjectAimPoint}
+                        moveTargetEnabled={moveTargetEnabled}
+                        onSubjectAimChange={setSubjectAimPoint}
                         docked
                       />
                     </div>
@@ -459,7 +557,14 @@ export default function App() {
                         playhead={playhead}
                         speedPercent={speedPercent}
                         livePose={livePose}
+                        calibration={calibration}
+                        focusFollow={focusFollow}
+                        subjectAimPoint={subjectAimPoint}
+                        moveTargetEnabled={moveTargetEnabled}
+                        onSubjectAimChange={setSubjectAimPoint}
                         showHorizon={viewLayout.cameraHorizon}
+                        onionSkinEnabled={viewLayout.cameraOnionSkin}
+                        onionSkinOffset={viewLayout.onionSkinOffset}
                         docked
                       />
                     </div>
@@ -488,6 +593,10 @@ export default function App() {
                     onStop={stop}
 
                     onSpeedPercentChange={setSpeedPercent}
+
+                    onRecord={() => toggleRecording(project)}
+
+                    recording={motionRecording}
 
                   />
 
@@ -561,7 +670,18 @@ export default function App() {
             zoomVelocity={zoomVelocity}
             demoMode={DEMO_MODE}
             targetLock={targetLock}
+            calibration={calibration}
+            focusFollow={focusFollow}
+            onMeasuredHomeChange={setMeasuredHomeM}
+            onClearCalibration={clearCalibration}
+            onFocusFollowChange={setFocusFollow}
             onTargetLockChange={setTargetLock}
+            subjectAimPoint={subjectAimPoint}
+            moveTargetEnabled={moveTargetEnabled}
+            onMoveTargetEnabledChange={setMoveTargetEnabled}
+            onResetSubjectAim={resetSubjectAim}
+            gamepadEnabled={gamepadEnabled}
+            onGamepadEnabledChange={setGamepadEnabled}
             onUpdateProject={updateProject}
             onDeleteSelection={deleteSelection}
             onSpeedPercentChange={setSpeedPercent}

@@ -2084,6 +2084,148 @@ a {
   color: #2d9d8a;
 }
 
+.live-axis-focus .live-axis-name {
+  color: #d4844a;
+}
+
+.live-focus-hint {
+  margin: 0.2rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.focus-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.focus-live-readout {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(212, 132, 74, 0.1);
+  border: 1px solid rgba(212, 132, 74, 0.28);
+}
+
+.focus-live-caption {
+  margin: 0.35rem 0 0;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.focus-calibration-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.focus-cal-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.focus-cal-label output {
+  font-size: 0.85rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-cal-input {
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.focus-cal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.btn-muted {
+  opacity: 0.75;
+}
+
+.focus-cal-status,
+.focus-follow-status {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.focus-follow-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.focus-distance-badge {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(212, 132, 74, 0.14);
+  border: 1px solid rgba(212, 132, 74, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-distance-badge.compact {
+  padding: 0.1rem 0.4rem;
+  font-size: 0.78rem;
+}
+
+.focus-distance-badge.follow-on {
+  border-color: rgba(95, 232, 138, 0.45);
+}
+
+.focus-distance-value {
+  font-weight: 600;
+  color: #e8a06a;
+}
+
+.focus-distance-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.focus-distance-delta {
+  color: #9ab4d8;
+}
+
+.focus-follow-pulse {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #5de88a;
+  animation: focus-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes focus-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.rig-preview-header .focus-distance-badge {
+  margin-left: auto;
+  margin-right: 0.35rem;
+}
+
 .live-lock-row {
   display: flex;
   flex-wrap: wrap;

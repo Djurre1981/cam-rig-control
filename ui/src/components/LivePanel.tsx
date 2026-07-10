@@ -1,4 +1,5 @@
 import { CollapsibleSection } from "./CollapsibleSection";
+import { FocusDistanceBadge } from "./FocusDistanceBadge";
 import { AXIS_LABELS } from "../types";
 import { axisVelocityCap } from "../lib/motionLimits";
 import {
@@ -8,6 +9,15 @@ import {
   zoomVelocityCap,
   type TargetLockMode,
 } from "../lib/liveMotion";
+import {
+  computedDistanceAtHome,
+  focusDistanceAtPose,
+  focusFollowHint,
+  formatDeltaM,
+  type FocusCalibration,
+} from "../lib/focusCalibration";
+import { formatFocusDiopters, formatFocusDistance, formatMountToLensOffsets } from "../lib/rigFocus";
+import { formatSubjectAim, type SubjectAimPoint } from "../lib/subjectTarget";
 import type { RigPose } from "../lib/rigKinematics";
 
 type Props = {
@@ -16,7 +26,18 @@ type Props = {
   zoomVelocity: number;
   speedPercent: number;
   targetLock: TargetLockMode;
+  calibration: FocusCalibration;
+  focusFollow: boolean;
+  onMeasuredHomeChange: (metres: number | null) => void;
+  onClearCalibration: () => void;
+  onFocusFollowChange: (on: boolean) => void;
   onTargetLockChange: (mode: TargetLockMode) => void;
+  subjectAimPoint: SubjectAimPoint;
+  moveTargetEnabled: boolean;
+  onMoveTargetEnabledChange: (on: boolean) => void;
+  onResetSubjectAim: () => void;
+  gamepadEnabled: boolean;
+  onGamepadEnabledChange: (on: boolean) => void;
   onSpeedPercentChange: (pct: number) => void;
   onVelocityChange: (axis: number, value: number) => void;
   onZoomVelocityChange: (value: number) => void;
@@ -36,7 +57,18 @@ export function LivePanel({
   zoomVelocity,
   speedPercent,
   targetLock,
+  calibration,
+  focusFollow,
+  onMeasuredHomeChange,
+  onClearCalibration,
+  onFocusFollowChange,
   onTargetLockChange,
+  subjectAimPoint,
+  moveTargetEnabled,
+  onMoveTargetEnabledChange,
+  onResetSubjectAim,
+  gamepadEnabled,
+  onGamepadEnabledChange,
   onSpeedPercentChange,
   onVelocityChange,
   onZoomVelocityChange,
@@ -52,7 +84,91 @@ export function LivePanel({
   const zoomCap = zoomVelocityCap(speedPercent);
   const zoomPct = zoomCap > 0 ? Math.round((zoomVelocity / zoomCap) * 100) : 0;
   const zoomReadout = formatZoomReadout(pose.zoom);
+  const focusState = focusDistanceAtPose(pose, calibration, subjectAimPoint);
+  const followHint = focusFollow ? focusFollowHint(focusState.deltaFromHomeM) : null;
   const lockBadge = targetLock === "off" ? undefined : targetLock === "on" ? "lock" : "smooth";
+  const homeComputed = computedDistanceAtHome(subjectAimPoint);
+  const measuredInput =
+    calibration.measuredHomeM != null ? String(calibration.measuredHomeM) : "";
+
+  const focusBlock = (
+    <div className="focus-panel">
+      <div className="focus-live-readout">
+        <FocusDistanceBadge pose={pose} calibration={calibration} focusFollow={focusFollow} />
+        <p className="focus-live-caption">Lens → home subject (updates as you jog)</p>
+      </div>
+
+      <div className="focus-calibration-grid">
+        <label className="focus-cal-label">
+          <span>Model at home</span>
+          <output>{formatFocusDistance(homeComputed)}</output>
+        </label>
+        <label className="focus-cal-label">
+          <span>Tape measure at home (m)</span>
+          <input
+            type="number"
+            className="focus-cal-input"
+            min={0.1}
+            max={50}
+            step={0.01}
+            placeholder={homeComputed.toFixed(2)}
+            value={measuredInput}
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              if (!v) {
+                onClearCalibration();
+                return;
+              }
+              const n = Number(v);
+              if (Number.isFinite(n) && n > 0) onMeasuredHomeChange(n);
+            }}
+          />
+        </label>
+      </div>
+
+      <div className="focus-cal-actions">
+        <button
+          type="button"
+          className="btn-compact"
+          title="Use current model distance at home as calibration reference"
+          onClick={() => onMeasuredHomeChange(homeComputed)}
+        >
+          Use model distance
+        </button>
+        {calibration.measuredHomeM != null && (
+          <button type="button" className="btn-compact btn-muted" onClick={onClearCalibration}>
+            Clear calibration
+          </button>
+        )}
+      </div>
+
+      {focusState.calibrated && (
+        <p className="focus-cal-status">
+          Scale ×{focusState.scale.toFixed(3)} · model now{" "}
+          {formatFocusDistance(focusState.computedM)} → subject{" "}
+          {formatFocusDistance(focusState.subjectM)} ({formatFocusDiopters(focusState.subjectM)})
+        </p>
+      )}
+
+      <label className="focus-follow-toggle">
+        <input
+          type="checkbox"
+          checked={focusFollow}
+          onChange={(e) => onFocusFollowChange(e.target.checked)}
+        />
+        <span>Follow-focus preview (demo)</span>
+      </label>
+      {focusFollow && (
+        <p className="focus-follow-status">
+          {followHint?.direction === "hold"
+            ? "At home focus — hold"
+            : `Would send: ${followHint?.label} (Δ ${formatDeltaM(focusState.deltaFromHomeM)} from home)`}
+        </p>
+      )}
+
+      <p className="live-focus-hint">Mount offset: {formatMountToLensOffsets()}.</p>
+    </div>
+  );
 
   const axesGrid = (
     <div className="live-grid">
@@ -198,8 +314,37 @@ export function LivePanel({
           </svg>
           {embedded ? "Smooth" : "Smooth target lock"}
         </button>
+        <button
+          type="button"
+          className={["btn-target-lock", moveTargetEnabled ? "active" : ""].filter(Boolean).join(" ")}
+          aria-pressed={moveTargetEnabled}
+          title="Drag the reference target in 3D and camera previews (disables orbit/pan in 3D view)"
+          onClick={() => onMoveTargetEnabledChange(!moveTargetEnabled)}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+            <path
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              d="M12 3v4M12 17v4M3 12h4M17 12h4M7.05 7.05l2.83 2.83M14.12 14.12l2.83 2.83M7.05 16.95l2.83-2.83M14.12 9.88l2.83-2.83"
+            />
+          </svg>
+          {embedded ? "Move" : "Move target"}
+        </button>
       </div>
+      <p className="live-target-readout" title="World aim point (torso centre)">
+        Target {formatSubjectAim(subjectAimPoint)}
+      </p>
       <div className="live-actions">
+        <button
+          type="button"
+          className="btn-compact"
+          title="Reset reference target to home position"
+          onClick={onResetSubjectAim}
+        >
+          Reset target
+        </button>
         <button
           type="button"
           className="btn-home-all btn-compact btn-joy"
@@ -247,16 +392,40 @@ export function LivePanel({
 
       {tabbed ? (
         <>
-          <CollapsibleSection title="Jog axes" storageKey="live-axes" defaultOpen badge="5">
+          <CollapsibleSection title="Jog axes" storageKey="live-axes" defaultOpen badge="4">
             {axesGrid}
+          </CollapsibleSection>
+          <CollapsibleSection
+            title="Focus distance"
+            storageKey="live-focus"
+            defaultOpen
+            badge={focusState.calibrated ? "cal" : "model"}
+          >
+            {focusBlock}
           </CollapsibleSection>
           <CollapsibleSection title="Aim & home" storageKey="live-aim" defaultOpen badge={lockBadge}>
             {aimBlock}
+          </CollapsibleSection>
+          <CollapsibleSection title="Input" storageKey="live-input" defaultOpen badge={gamepadEnabled ? "pad" : undefined}>
+            <div className="live-input-block">
+              <label className="live-input-toggle">
+                <input
+                  type="checkbox"
+                  checked={gamepadEnabled}
+                  onChange={(e) => onGamepadEnabledChange(e.target.checked)}
+                />
+                Gamepad jog (Web Gamepad API)
+              </label>
+              <p className="live-input-hint">
+                L stick: boom / swing · R stick: yaw / pitch · RB/LB: zoom · Space: play · R: record · H: home all
+              </p>
+            </div>
           </CollapsibleSection>
         </>
       ) : (
         <>
           {axesGrid}
+          {focusBlock}
           {aimBlock}
         </>
       )}

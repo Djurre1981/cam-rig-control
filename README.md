@@ -62,7 +62,7 @@ Open `http://localhost:5173` (proxies API when configured).
 | Mechanical assembly | Not started |
 | Firmware | v0.1 — RAMPS pin map |
 | Host services | v0.1 scaffold |
-| UI timeline | v0.1 scaffold |
+| UI timeline | v0.2 — tactical demo workspace, poses, recording, docs |
 | Sony PTP backend | Stub |
 
 ## License
