@@ -7,17 +7,20 @@
 #define AXIS_PITCH  3
 #define NUM_AXES    4
 
-// RAMPS 1.6 on Arduino Mega 2560 (same pin map as RAMPS 1.4)
-// X=boom  Y=swing  Z=yaw  E0=pitch — see docs/pin_map.md
-static const uint8_t STEP_PINS[NUM_AXES]  = {54, 60, 46, 26};
-static const uint8_t DIR_PINS[NUM_AXES]   = {55, 61, 48, 28};
-static const uint8_t ENABLE_PINS[NUM_AXES] = {38, 56, 62, 24};  // active LOW
+// CNC Shield V3 on Arduino Uno R3
+// X=boom  Y=swing  Z=yaw  A=pitch — independent A-axis jumpers on D12/D13
+static const uint8_t STEP_PINS[NUM_AXES] = {2, 3, 4, 12};
+static const uint8_t DIR_PINS[NUM_AXES]  = {5, 6, 7, 13};
 
-// Boom limits on RAMPS X endstop header (NC to GND, INPUT_PULLUP)
-#define LIMIT_BOOM_MIN_PIN 3   // X_MIN
-#define LIMIT_BOOM_MAX_PIN 2   // X_MAX
+// Shared enable on CNC Shield (active LOW)
+#define ENABLE_PIN 8
 
-// Steps per motor output revolution @ 1/16 microstepping (DRV8825 MS pins)
+// Boom limits: X- endstop header (D9), Y- repurposed for boom max (D10)
+// 3-wire NO modules: green=S, black=GND, red=5V (not on endstop row)
+#define LIMIT_BOOM_MIN_PIN 9   // X-
+#define LIMIT_BOOM_MAX_PIN 10  // Y-
+
+// Steps per motor output revolution @ 1/16 microstepping (M2 jumper only per axis)
 #define STEPS_PER_REV_GEARED  16576.0f  // planetary output: 200 * 16 * 5.18
 #define STEPS_PER_REV_DIRECT   3200.0f  // yaw, pitch: plain NEMA 17
 
@@ -40,7 +43,6 @@ static const uint8_t ENABLE_PINS[NUM_AXES] = {38, 56, 62, 24};  // active LOW
 #define BOOM_TRAVEL_STEPS ((long)(BOOM_RANGE_DEG * STEPS_PER_DEG_BOOM + 0.5f))    // 9255
 
 // Motion limits (steps/s) — from min traverse times (see ui/src/lib/motionLimits.ts)
-// Boom 67°/2s, Swing 360°/4s, Yaw/Pitch 360°/2s @ 1/16 μstep
 static const float MAX_VEL[NUM_AXES]  = {4628, 41440, 1600, 1600};
 static const float MAX_ACCEL[NUM_AXES] = {900, 4000, 600, 600};
 
@@ -51,3 +53,6 @@ static const bool INVERT_DIR[NUM_AXES] = {false, false, false, false};
 
 #define BOOM_SOFT_MIN_DEFAULT 0
 #define BOOM_SOFT_MAX_DEFAULT BOOM_TRAVEL_STEPS
+
+#define FIRMWARE_NAME "cam_rig_uno"
+#define FIRMWARE_VERSION "0.1.0"

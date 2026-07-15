@@ -14,10 +14,24 @@ import { BOOM_RANGE_DEG } from "./rigConstants";
 
 export { BOOM_RANGE_DEG };
 
-/** Geared axes (boom, swing): 200 × 16 × 5.18 */
+/** Planetary motor output: 200 × 16 × 5.18 */
 export const STEPS_PER_REV_GEARED = 16576;
 /** Direct NEMA 17 (yaw, pitch): 200 × 16 */
 export const STEPS_PER_REV_DIRECT = 3200;
+
+/** Boom sector gear: 60T driven by 20T pinion on planetary output → ×3 */
+export const BOOM_PINION_TEETH = 20;
+export const BOOM_SECTOR_TEETH = 60;
+export const BOOM_GEAR_RATIO = BOOM_SECTOR_TEETH / BOOM_PINION_TEETH;
+export const STEPS_PER_REV_BOOM = STEPS_PER_REV_GEARED * BOOM_GEAR_RATIO;
+export const STEPS_PER_DEG_BOOM = STEPS_PER_REV_BOOM / 360;
+
+/** Swing ring gear: 180T driven by 18T pinion on planetary output → ×10 */
+export const SWING_PINION_TEETH = 18;
+export const SWING_RING_TEETH = 180;
+export const SWING_GEAR_RATIO = SWING_RING_TEETH / SWING_PINION_TEETH;
+export const STEPS_PER_REV_SWING = STEPS_PER_REV_GEARED * SWING_GEAR_RATIO;
+export const STEPS_PER_DEG_SWING = STEPS_PER_REV_SWING / 360;
 
 /** Timeline rotation axes: 10 units per degree, 3600 units = 360° (swing, yaw, pitch). */
 export const ROTATION_UNITS_PER_DEG = 10;
@@ -33,8 +47,8 @@ export function usesRotationUnits(axis: number): boolean {
 }
 
 const STEPS_PER_DEG = [
-  STEPS_PER_REV_GEARED / 360,
-  STEPS_PER_REV_GEARED / 360,
+  STEPS_PER_DEG_BOOM,
+  STEPS_PER_DEG_SWING,
   STEPS_PER_REV_DIRECT / 360,
   STEPS_PER_REV_DIRECT / 360,
 ] as const;
