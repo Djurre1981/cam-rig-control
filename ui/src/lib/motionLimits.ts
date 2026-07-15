@@ -16,7 +16,7 @@ export { BOOM_RANGE_DEG };
 
 /** Planetary motor output: 200 × 16 × 5.18 */
 export const STEPS_PER_REV_GEARED = 16576;
-/** Direct NEMA 17 (yaw, pitch): 200 × 16 */
+/** Plain NEMA 17 motor @ 1/16 μstep (yaw, pitch base) */
 export const STEPS_PER_REV_DIRECT = 3200;
 
 /** Boom sector gear: 60T driven by 20T pinion on planetary output → ×3 */
@@ -32,6 +32,24 @@ export const SWING_RING_TEETH = 180;
 export const SWING_GEAR_RATIO = SWING_RING_TEETH / SWING_PINION_TEETH;
 export const STEPS_PER_REV_SWING = STEPS_PER_REV_GEARED * SWING_GEAR_RATIO;
 export const STEPS_PER_DEG_SWING = STEPS_PER_REV_SWING / 360;
+
+/** Yaw gear: 80T driven by 20T pinion on plain NEMA 17 → ×4 */
+export const YAW_PINION_TEETH = 20;
+export const YAW_OUTPUT_TEETH = 80;
+export const YAW_GEAR_RATIO = YAW_OUTPUT_TEETH / YAW_PINION_TEETH;
+export const STEPS_PER_REV_YAW = STEPS_PER_REV_DIRECT * YAW_GEAR_RATIO;
+export const STEPS_PER_DEG_YAW = STEPS_PER_REV_YAW / 360;
+
+/** Pitch compound gear: 20T → 40T/20T → 80T cradle → ×8 */
+export const PITCH_PINION_TEETH = 20;
+export const PITCH_COMPOUND_LARGE_TEETH = 40;
+export const PITCH_COMPOUND_SMALL_TEETH = 20;
+export const PITCH_OUTPUT_TEETH = 80;
+export const PITCH_STAGE1_RATIO = PITCH_COMPOUND_LARGE_TEETH / PITCH_PINION_TEETH;
+export const PITCH_STAGE2_RATIO = PITCH_OUTPUT_TEETH / PITCH_COMPOUND_SMALL_TEETH;
+export const PITCH_GEAR_RATIO = PITCH_STAGE1_RATIO * PITCH_STAGE2_RATIO;
+export const STEPS_PER_REV_PITCH = STEPS_PER_REV_DIRECT * PITCH_GEAR_RATIO;
+export const STEPS_PER_DEG_PITCH = STEPS_PER_REV_PITCH / 360;
 
 /** Timeline rotation axes: 10 units per degree, 3600 units = 360° (swing, yaw, pitch). */
 export const ROTATION_UNITS_PER_DEG = 10;
@@ -49,8 +67,8 @@ export function usesRotationUnits(axis: number): boolean {
 const STEPS_PER_DEG = [
   STEPS_PER_DEG_BOOM,
   STEPS_PER_DEG_SWING,
-  STEPS_PER_REV_DIRECT / 360,
-  STEPS_PER_REV_DIRECT / 360,
+  STEPS_PER_DEG_YAW,
+  STEPS_PER_DEG_PITCH,
 ] as const;
 
 /** Minimum time (s) for full axis travel at max speed. */
